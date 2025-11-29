@@ -1,29 +1,296 @@
 <!DOCTYPE html>
 <html lang="zh-Hant" data-bs-theme="light">
 <head>
-	<meta charset="UTF-8" />
-	<meta name="viewport" content="width=device-width, initial-scale=1" />
-	<title>疏密波（縱波）模擬 - 國中自然科學模擬動畫</title>
-	<meta name="description" content="疏密波(縱波)傳播與質點運動互動式模擬" />
-	<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" />
-	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
-	<link rel="stylesheet" href="../assets/css/common.css" />
-	<link rel="stylesheet" href="../assets/css/accessibility.css" />
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>疏密波（縱波）模擬 - 國中自然科學模擬動畫</title>
+    <meta name="description" content="疏密波(縱波)傳播與質點運動互動式模擬" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+    <style>
+        .skip-link{position:absolute;left:-1000px;top:0;background:#000;color:#fff;padding:.5rem 1rem;z-index:1000;} .skip-link:focus{left:0;}
+        :focus-visible{outline:3px solid #ff9800;outline-offset:2px;}
+        canvas{background:#0d1117;display:block;width:100%;max-width:100%;height:auto;border:1px solid #333;border-radius:4px;}
+        .live-region{min-height:1.5em;}
+    </style>
 </head>
 <body class="d-flex flex-column min-vh-100">
-	<a href="#main" class="skip-link">跳到主內容</a>
-	<div id="navbarContainer"></div>
-	<main id="main" class="container py-3" tabindex="-1">
-		<h1 class="h3 mb-3">疏密波 (縱波) 模擬</h1>
-		<!-- 原始內容精簡 -->
-	</main>
-	<div id="footerContainer"></div>
-	<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-	<script type="module">
-		import { initThemeToggle } from '../assets/js/theme.js';
-		import { loadNavigation } from '../assets/js/navigation.js';
-		await loadNavigation({ baseUrl: '..', navbarPath: '../assets/templates/navbar.html', footerPath: '../assets/templates/footer.html' });
-		initThemeToggle();
-	</script>
+    <a href="#main" class="skip-link">跳到主內容</a>
+    <header>
+        <nav class="navbar navbar-expand-lg bg-body-tertiary" aria-label="頁面導覽">
+            <div class="container-fluid">
+                <a class="navbar-brand" href="../index.html" aria-label="返回首頁"><i class="fa-solid fa-arrow-left" aria-hidden="true"></i> 首頁</a>
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navContent" aria-controls="navContent" aria-expanded="false" aria-label="切換導覽"><span class="navbar-toggler-icon"></span></button>
+                <div class="collapse navbar-collapse" id="navContent">
+                    <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                        <li class="nav-item"><a class="nav-link" href="../index.html#physics">物理</a></li>
+                        <li class="nav-item"><a class="nav-link" href="../index.html#math">數學</a></li>
+                        <li class="nav-item"><a class="nav-link" href="../index.html#chemistry">化學</a></li>
+                    </ul>
+                    <button id="themeToggle" class="btn btn-outline-secondary" type="button" aria-pressed="false" aria-label="切換深淺主題"><i class="fa-solid fa-circle-half-stroke" aria-hidden="true"></i></button>
+                </div>
+            </div>
+        </nav>
+    </header>
+    <main id="main" class="container py-3" tabindex="-1">
+        <h1 class="h3 mb-3">疏密波 (縱波) 模擬</h1>
+        <p class="mb-4">調整振幅、波長與頻率，觀察縱波密部與疏部傳播，以及質點只在平衡位置附近振盪的特性。</p>
+        <div class="row g-4">
+            <section class="col-12 col-lg-7" aria-labelledby="sec-visual">
+                <h2 id="sec-visual" class="h5">視覺區</h2>
+                <div class="ratio ratio-16x9 mb-3">
+                    <canvas id="waveCanvas" aria-label="疏密波模擬畫布" role="img"></canvas>
+                </div>
+                <div id="waveStatus" class="live-region small" aria-live="polite" aria-atomic="true">狀態：運行中</div>
+            </section>
+            <aside class="col-12 col-lg-5" aria-labelledby="sec-controls">
+                <h2 id="sec-controls" class="h5">控制面板</h2>
+                <form id="controls" class="needs-validation" novalidate>
+                    <fieldset class="mb-3">
+                        <legend class="fs-6">參數設定</legend>
+                        <div class="mb-3">
+                            <label for="amplitudeSlider" class="form-label">振幅 A (px)</label>
+                            <input type="range" id="amplitudeSlider" class="form-range" min="5" max="50" value="30" step="1" aria-valuemin="5" aria-valuemax="50" aria-valuenow="30" aria-label="調整振幅">
+                            <div class="form-text">質點偏離平衡位置的最大距離。</div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="wavelengthSlider" class="form-label">波長 λ (px)</label>
+                            <input type="range" id="wavelengthSlider" class="form-range" min="100" max="500" value="200" step="10" aria-valuemin="100" aria-valuemax="500" aria-valuenow="200" aria-label="調整波長">
+                            <div class="form-text">一個密部到下一個密部的距離。</div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="frequencySlider" class="form-label">頻率 f (Hz)</label>
+                            <input type="range" id="frequencySlider" class="form-range" min="0.1" max="2" value="0.5" step="0.1" aria-valuemin="0.1" aria-valuemax="2" aria-valuenow="0.5" aria-label="調整頻率">
+                            <div class="form-text">質點每秒鐘來回振盪的次數。</div>
+                        </div>
+                    </fieldset>
+                                <div class="btn-group mb-3" role="group" aria-label="模擬控制與說明">
+                        <button type="button" id="toggleButton" class="btn btn-primary" aria-pressed="true"><i class="fa-solid fa-pause" aria-hidden="true"></i> 暫停</button>
+                        <button type="button" id="resetButton" class="btn btn-outline-secondary"><i class="fa-solid fa-rotate-left" aria-hidden="true"></i> 重設</button>
+                                    <button type="button" class="btn btn-outline-info" data-bs-toggle="collapse" data-bs-target="#help" aria-expanded="false" aria-controls="help">
+                                        <i class="fa-solid fa-circle-question" aria-hidden="true"></i> 操作說明
+                                    </button>
+                    </div>
+                    <div id="help" class="collapse mt-2">
+                        <div class="card card-body small">
+                            <strong>快捷鍵：</strong>
+                            <ul class="mb-2">
+                                <li><kbd>Space</kbd>：播放 / 暫停</li>
+                                <li><kbd>R</kbd>：重設</li>
+                                <li><kbd>← / →</kbd>：微調振幅</li>
+                            </ul>
+                            <p class="mb-0">質點只在平衡位置附近振盪，能量與疏密型態沿波的方向傳播。</p>
+                        </div>
+                    </div>
+                </form>
+                <div class="alert alert-warning mt-3 small" role="alert">
+                    <strong>教學重點：</strong> 紅色質點僅在自身平衡位置振盪，並不前進；傳遞的是能量與擾動。
+                </div>
+            </aside>
+        </div>
+    </main>
+    <footer class="mt-auto py-3 bg-light border-top small text-center" role="contentinfo">&copy; 2025 國中自然科學模擬動畫</footer>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // 主題切換
+        const toggleThemeBtn = document.getElementById('themeToggle');
+        function setTheme(theme){document.documentElement.setAttribute('data-bs-theme', theme);localStorage.setItem('theme', theme);toggleThemeBtn.setAttribute('aria-pressed', theme==='dark');}
+        const savedTheme = localStorage.getItem('theme');
+        if(savedTheme){setTheme(savedTheme);} else if(window.matchMedia('(prefers-color-scheme: dark)').matches){setTheme('dark');}
+        toggleThemeBtn && toggleThemeBtn.addEventListener('click',()=>{const current=document.documentElement.getAttribute('data-bs-theme')||'light';setTheme(current==='light'?'dark':'light');});
+
+        // 原縱波模擬程式碼
+        window.onload = function() {
+                        // 初始設定
+            
+            const canvas = document.getElementById('waveCanvas');
+            const ctx = canvas.getContext('2d');
+            
+            // 取得所有控制元件
+            const amplitudeSlider = document.getElementById('amplitudeSlider');
+            const wavelengthSlider = document.getElementById('wavelengthSlider');
+            const frequencySlider = document.getElementById('frequencySlider');
+            const toggleButton = document.getElementById('toggleButton');
+            const resetButton = document.getElementById('resetButton');
+                        const statusRegion = document.getElementById('waveStatus');
+
+            // 畫布基本設定
+            canvas.width = 800; // 固定畫布解析度
+            canvas.height = 200;
+            
+            // 質點設定
+            const NUM_PARTICLES = 60; // 質點數量 (由 80 減少 1/4)
+            const PARTICLE_WIDTH = 8; // 長條寬度
+            const PARTICLE_HEIGHT = 80; // 長條高度
+            const particles = [];
+            
+            // 找出要標記為紅色的質點 (大約在 1/4 處)
+            const HIGHLIGHT_INDEX = Math.floor(NUM_PARTICLES / 4); 
+
+            // 動畫變數
+            let time = 0;
+            let isRunning = true;
+
+            // 控制參數 (從滑桿讀取)
+            let amplitude, wavelength, frequency, k, w;
+
+            // --- 2. 函數定義 ---
+
+            /**
+             * 初始化或重設所有質點
+             */
+            function setupParticles() {
+                particles.length = 0; // 清空陣列
+                const spacing = canvas.width / (NUM_PARTICLES + 1);
+                
+                for (let i = 0; i < NUM_PARTICLES; i++) {
+                    const x_eq = spacing * (i + 1); // x 的平衡位置
+                    const y = canvas.height / 2;    // y 的平衡位置
+                    
+                    particles.push({
+                        x_eq: x_eq,  // 平衡位置 (Equilibrium position)
+                        y: y,
+                        x: x_eq,     // 當前 x 位置 (會變動)
+                        isHighlighted: (i === HIGHLIGHT_INDEX) // 是否為紅色質點
+                    });
+                }
+            }
+
+            /**
+             * 從滑桿讀取參數
+             */
+            function readParameters() {
+                amplitude = parseFloat(amplitudeSlider.value);
+                wavelength = parseFloat(wavelengthSlider.value);
+                frequency = parseFloat(frequencySlider.value);
+
+                // 波數 k = 2 * PI / λ
+                k = (2 * Math.PI) / wavelength;
+                // 角頻率 w = 2 * PI * f
+                w = (2 * Math.PI) * frequency;
+            }
+
+            /**
+             * 更新所有質點的位置
+             */
+            function update() {
+                if (!isRunning) return; // 如果暫停，就不更新
+
+                readParameters();
+                
+                // 增加時間，讓波看起來在動
+                // 乘上 frequency 可以讓時間流逝速度與頻率掛鉤，但為了簡化，
+                // 我們讓 time 獨立增加，w (角頻率) 來控制速度
+                time += 0.016; // 假設約 60 FPS
+
+                particles.forEach(p => {
+                    // 核心公式： y(x,t) = A * sin(kx - wt)
+                    // 這裡的 "y" 是指質點的 "位移" (displacement)
+                    const displacement = amplitude * Math.sin(k * p.x_eq - w * time);
+                    
+                    // 新的 x 位置 = 平衡位置 + 位移
+                    p.x = p.x_eq + displacement;
+                });
+            }
+
+            /**
+             * 繪製所有質點到畫布上
+             */
+            function draw() {
+                // 1. 清空畫布 (用深色背景)
+                ctx.fillStyle = '#111827'; // Tailwind gray-900
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+                // 2. 繪製每一個質點
+                particles.forEach(p => {
+                    
+                    // 如果是紅色質點，額外繪製它的平衡位置虛線
+                    if (p.isHighlighted) {
+                        ctx.strokeStyle = 'rgba(255, 0, 0, 0.5)'; // 半透明紅色
+                        ctx.lineWidth = 1;
+                        ctx.setLineDash([5, 5]); // 虛線
+                        
+                        ctx.beginPath();
+                        ctx.moveTo(p.x_eq, p.y - 40);
+                        ctx.lineTo(p.x_eq, p.y + 40);
+                        ctx.stroke();
+                        ctx.setLineDash([]); // 關閉虛線
+                    }
+
+                    // 繪製質點 (長條狀)
+                    ctx.beginPath();
+                    
+                    // 根據是否為紅色質點設定顏色
+                    ctx.fillStyle = p.isHighlighted ? '#ef4444' : '#ffffff'; // 紅色或白色
+                    
+                    // 繪製長條
+                    ctx.fillRect(p.x - PARTICLE_WIDTH / 2, p.y - PARTICLE_HEIGHT / 2, PARTICLE_WIDTH, PARTICLE_HEIGHT);
+                });
+            }
+
+            /**
+             * 動畫主循環 (Game Loop)
+             */
+            function animateLoop() {
+                update();
+                draw();
+                if (isRunning) {requestAnimationFrame(animateLoop);} }
+
+            // --- 3. 事件監聽 ---
+
+            toggleButton.addEventListener('click', () => {
+                isRunning = !isRunning;
+                toggleButton.innerHTML = isRunning ? '<i class="fa-solid fa-pause" aria-hidden="true"></i> 暫停' : '<i class="fa-solid fa-play" aria-hidden="true"></i> 播放';
+                toggleButton.setAttribute('aria-pressed', isRunning);
+                statusRegion.textContent = '狀態：' + (isRunning ? '運行中' : '已暫停');
+                if (isRunning) {animateLoop();}
+            });
+
+            resetButton.addEventListener('click', () => {
+                time = 0; // 時間歸零
+                // 重設滑桿到預設值
+                amplitudeSlider.value = 30;
+                wavelengthSlider.value = 200;
+                frequencySlider.value = 0.5;
+                
+                // 重新讀取參數並繪製一次
+                readParameters();
+                // 手動觸發一次質點位置更新 (即使在暫停狀態下)
+                particles.forEach(p => {
+                    const displacement = amplitude * Math.sin(k * p.x_eq - w * time);
+                    p.x = p.x_eq + displacement;
+                });
+                draw();
+                statusRegion.textContent = '狀態：已重設';
+            });
+
+            // 當滑桿變動時，立即讀取新參數 (即使在暫停時)
+            function handleSliderChange() {
+                readParameters();
+                // 如果在暫停狀態，也要即時更新畫面
+                if (!isRunning) {
+                    // 手動更新質點位置
+                    particles.forEach(p => {
+                        // 注意：這裡的 time 是暫停時的時間
+                        const displacement = amplitude * Math.sin(k * p.x_eq - w * time);
+                        p.x = p.x_eq + displacement;
+                    });
+                    draw();
+                }
+            }
+
+            amplitudeSlider.addEventListener('input', handleSliderChange);
+            wavelengthSlider.addEventListener('input', handleSliderChange);
+            frequencySlider.addEventListener('input', handleSliderChange);
+            document.addEventListener('keydown',(e)=>{if(e.code==='Space'){e.preventDefault();toggleButton.click();} if(e.key==='R'){resetButton.click();} if(e.key==='ArrowLeft'){amplitudeSlider.stepDown(); handleSliderChange();} if(e.key==='ArrowRight'){amplitudeSlider.stepUp(); handleSliderChange();}});
+
+
+            // --- 4. 啟動 ---
+            
+            setupParticles();
+            readParameters();
+            animateLoop();
+        };
+  </script>
 </body>
 </html>

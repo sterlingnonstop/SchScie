@@ -1,28 +1,488 @@
 <!DOCTYPE html>
 <html lang="zh-Hant" data-bs-theme="light">
 <head>
-	<meta charset="UTF-8" />
-	<meta name="viewport" content="width=device-width, initial-scale=1" />
-	<title>正弦波前進模擬 - 國中自然科學模擬動畫</title>
-	<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-	<link rel="stylesheet" href="../assets/css/common.css">
-	<link rel="stylesheet" href="../assets/css/accessibility.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>正弦波前進模擬 - 國中自然科學模擬動畫</title>
+    <meta name="description" content="互動式正弦波前進模擬，觀察橫波的傳播與質點振動">
+    <!-- Bootstrap 5.3 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome 6 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* Skip link */
+        .skip-link {position:absolute;left:-1000px;top:0;background:#000;color:#fff;padding:.5rem 1rem;z-index:1000;}
+        .skip-link:focus {left:0;}
+        
+        /* Focus visibility */
+        :focus-visible {outline:3px solid #ff9800;outline-offset:2px;}
+        
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            background-color: var(--bs-body-bg);
+            min-height: 100vh;
+        }
+        
+        #waveCanvas {
+            width: 100%;
+            height: 400px;
+            background-color: var(--bs-body-bg);
+            border: 2px solid var(--bs-border-color);
+            border-radius: 0.5rem;
+            cursor: crosshair;
+        }
+        
+        @media (max-width: 768px) {
+            #waveCanvas {
+                height: 300px;
+            }
+        }
+        
+        .control-group {
+            background-color: var(--bs-light);
+            border: 1px solid var(--bs-border-color);
+            border-radius: 0.5rem;
+            padding: 1rem;
+        }
+    </style>
 </head>
 <body>
-	<a href="#main" class="skip-link">跳到主內容</a>
-	<div id="navbarContainer"></div>
-	<main id="main" class="container my-4" tabindex="-1">
-		<h1 class="h3 mb-3">正弦波前進模擬</h1>
-		<!-- 原始內容精簡 -->
-	</main>
-	<div id="footerContainer"></div>
-	<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-	<script type="module">
-		import { initThemeToggle } from '../assets/js/theme.js';
-		import { loadNavigation } from '../assets/js/navigation.js';
-		await loadNavigation({ baseUrl: '..', navbarPath: '../assets/templates/navbar.html', footerPath: '../assets/templates/footer.html' });
-		initThemeToggle();
-	</script>
+    <a href="#main" class="skip-link">跳到主內容</a>
+    
+    <!-- 導航列 -->
+    <nav class="navbar navbar-expand-lg bg-body-tertiary sticky-top" style="z-index: 1000;">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="../index.html" aria-label="返回首頁">
+                <i class="fa-solid fa-house" aria-hidden="true"></i>
+                <span class="ms-2">首頁</span>
+            </a>
+            <button id="themeToggle" class="btn btn-outline-secondary" type="button" aria-pressed="false" aria-label="切換深淺主題">
+                <i class="fa-solid fa-circle-half-stroke" aria-hidden="true"></i>
+            </button>
+        </div>
+    </nav>
+
+    <main id="main" class="container my-4" tabindex="-1">
+        <div class="row g-4">
+            
+            <!-- 左側：模擬畫布 -->
+            <div class="col-12 col-lg-8">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <h1 class="h3 card-title mb-3">
+                            <i class="fa-solid fa-water" aria-hidden="true"></i>
+                            正弦波前進模擬
+                        </h1>
+                        <p class="card-text mb-4">
+                            觀察正弦波（橫波）的傳播過程。紅點代表介質中的質點，只做上下振動，波形本身則向前傳播。
+                        </p>
+                        
+                        <!-- 即時狀態通知 -->
+                        <div id="statusRegion" class="visually-hidden" aria-live="polite" aria-atomic="true">初始化中</div>
+                        
+                        <!-- Canvas -->
+                        <canvas id="waveCanvas" role="img" aria-label="正弦波動畫模擬"></canvas>
+                        
+                        <p class="small text-muted mt-3 mb-0">
+                            <i class="fa-solid fa-circle-info" aria-hidden="true"></i>
+                            垂直虛線代表固定位置，觀察紅點只做垂直振動，不隨波前進。
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 右側：控制面板 -->
+            <div class="col-12 col-lg-4">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <h2 class="h5 card-title mb-3">控制面板</h2>
+                        
+                        <!-- 播放控制 -->
+                        <div class="control-group mb-3">
+                            <div class="d-grid gap-2">
+                                <button id="playPauseBtn" class="btn btn-primary" type="button" aria-pressed="false">
+                                    <i class="fa-solid fa-play" aria-hidden="true"></i>
+                                    <span>開始</span>
+                                </button>
+                                <button id="resetBtn" class="btn btn-outline-secondary" type="button">
+                                    <i class="fa-solid fa-rotate-right" aria-hidden="true"></i>
+                                    重置
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- 速度控制 -->
+                        <div class="control-group mb-3">
+                            <label for="speedRange" class="form-label fw-semibold">
+                                波速 (v)
+                                <span id="speedValue" class="badge bg-primary ms-2">0.05</span>
+                            </label>
+                            <input type="range" class="form-range" id="speedRange" 
+                                   min="0.01" max="0.2" step="0.01" value="0.05"
+                                   aria-valuemin="0.01" aria-valuemax="0.2" aria-valuenow="0.05"
+                                   aria-label="調整波速">
+                        </div>
+
+                        <!-- 頻率控制 -->
+                        <div class="control-group mb-3">
+                            <label for="frequencyRange" class="form-label fw-semibold">
+                                頻率 (f)
+                                <span id="frequencyValue" class="badge bg-success ms-2">3</span>
+                            </label>
+                            <input type="range" class="form-range" id="frequencyRange" 
+                                   min="1" max="10" step="1" value="3"
+                                   aria-valuemin="1" aria-valuemax="10" aria-valuenow="3"
+                                   aria-label="調整頻率（畫面中的波數）">
+                        </div>
+
+                        <!-- 快捷鍵說明 -->
+                        <div class="mb-3">
+                            <button class="btn btn-outline-info btn-sm w-100" type="button" 
+                                    data-bs-toggle="collapse" data-bs-target="#shortcutHelp" 
+                                    aria-expanded="false" aria-controls="shortcutHelp">
+                                <i class="fa-solid fa-keyboard" aria-hidden="true"></i> 快捷鍵說明
+                            </button>
+                            <div id="shortcutHelp" class="collapse mt-2">
+                                <div class="card card-body small">
+                                    <ul class="mb-0" aria-label="快捷鍵清單">
+                                        <li><kbd>Space</kbd>：開始/暫停</li>
+                                        <li><kbd>R</kbd>：重置</li>
+                                        <li><kbd>← / →</kbd>：調整波速</li>
+                                        <li><kbd>↑ / ↓</kbd>：調整頻率</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 理論說明 Accordion -->
+                        <div class="accordion" id="theoryAccordion">
+                            <div class="accordion-item">
+                                <h3 class="accordion-header" id="headingFormula">
+                                    <button class="accordion-button collapsed" type="button" 
+                                            data-bs-toggle="collapse" data-bs-target="#panelFormula" 
+                                            aria-expanded="false" aria-controls="panelFormula">
+                                        波動公式
+                                    </button>
+                                </h3>
+                                <div id="panelFormula" class="accordion-collapse collapse" 
+                                     aria-labelledby="headingFormula" data-bs-parent="#theoryAccordion">
+                                    <div class="accordion-body small">
+                                        <p><strong>波速公式：</strong> v = f × λ</p>
+                                        <ul class="mb-0">
+                                            <li>v：波速 (m/s)</li>
+                                            <li>f：頻率 (Hz)</li>
+                                            <li>λ：波長 (m)</li>
+                                        </ul>
+                                        <p class="mt-2"><strong>位移公式：</strong> y = A sin(kx - ωt)</p>
+                                        <ul class="mb-0">
+                                            <li>A：振幅</li>
+                                            <li>k：波數 = 2π/λ</li>
+                                            <li>ω：角頻率 = 2πf</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="accordion-item">
+                                <h3 class="accordion-header" id="headingConcept">
+                                    <button class="accordion-button collapsed" type="button" 
+                                            data-bs-toggle="collapse" data-bs-target="#panelConcept" 
+                                            aria-expanded="false" aria-controls="panelConcept">
+                                        觀察重點
+                                    </button>
+                                </h3>
+                                <div id="panelConcept" class="accordion-collapse collapse" 
+                                     aria-labelledby="headingConcept" data-bs-parent="#theoryAccordion">
+                                    <div class="accordion-body small">
+                                        <ul class="mb-0">
+                                            <li>紅點（質點）只做<strong>垂直振動</strong>，不會隨波前進</li>
+                                            <li>波形本身向前傳播，這是<strong>能量的傳遞</strong></li>
+                                            <li>頻率越高，波長越短（波數越多）</li>
+                                            <li>波速越快，波形移動越快</li>
+                                            <li>這是<strong>橫波</strong>：振動方向垂直於傳播方向</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Bootstrap JS Bundle -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- Bootstrap JS Bundle -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // ===== 主題切換功能 =====
+        function initThemeToggle(btn){
+            function setTheme(t){
+                document.documentElement.setAttribute('data-bs-theme',t);
+                localStorage.setItem('theme',t);
+                btn.setAttribute('aria-pressed', t==='dark');
+            }
+            const stored = localStorage.getItem('theme');
+            if(stored){setTheme(stored);} 
+            else if(window.matchMedia('(prefers-color-scheme: dark)').matches){setTheme('dark');}
+            btn.addEventListener('click',()=>{
+                const cur=document.documentElement.getAttribute('data-bs-theme')||'light';
+                setTheme(cur==='light'?'dark':'light');
+            });
+        }
+        initThemeToggle(document.getElementById('themeToggle'));
+
+        // ===== Live Region 助手 =====
+        function createLiveRegion(id, {interval=200}={}){
+            const el = document.getElementById(id);
+            let last = 0; let pending;
+            return function announce(msg){
+                const now = performance.now();
+                if(now - last < interval){ pending = msg; return; }
+                el.textContent = msg; last = now; pending = undefined;
+                setTimeout(()=>{ 
+                    if(pending){ 
+                        el.textContent = pending; 
+                        last = performance.now(); 
+                        pending = undefined; 
+                    }
+                }, interval);
+            };
+        }
+        const announceStatus = createLiveRegion('statusRegion');
+
+        // ===== 波動模擬主程式 =====
+        const canvas = document.getElementById('waveCanvas');
+        const ctx = canvas.getContext('2d');
+        const playPauseBtn = document.getElementById('playPauseBtn');
+        const resetBtn = document.getElementById('resetBtn');
+        const speedRange = document.getElementById('speedRange');
+        const speedValue = document.getElementById('speedValue');
+        const frequencyRange = document.getElementById('frequencyRange');
+        const frequencyValue = document.getElementById('frequencyValue');
+
+        // 波形參數
+        let amplitude = 100;
+        let frequency = 3;
+        let speed = 0.05;
+        let phase = 0;
+        let isPlaying = false;
+        let animationId = null;
+
+        // 設置畫布尺寸
+        function resizeCanvas() {
+            canvas.width = canvas.offsetWidth;
+            canvas.height = canvas.offsetHeight;
+            amplitude = canvas.height / 3;
+        }
+
+        // 繪製波形
+        function draw() {
+            if (canvas.width === 0 || canvas.height === 0) return;
+
+            const width = canvas.width;
+            const height = canvas.height;
+            const centerY = height / 2;
+
+            // 清除畫布
+            ctx.clearRect(0, 0, width, height);
+
+            // 繪製中心 X 軸
+            ctx.beginPath();
+            ctx.moveTo(0, centerY);
+            ctx.lineTo(width, centerY);
+            ctx.strokeStyle = getComputedStyle(document.documentElement)
+                .getPropertyValue('--bs-secondary-bg');
+            ctx.lineWidth = 1;
+            ctx.setLineDash([5, 5]);
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            // 繪製質點位置的垂直虛線
+            const dotRadius = 6;
+            const dotLeftX = dotRadius;
+            const dotCenterX = width / 2;
+            const dotRightX = width - dotRadius;
+
+            ctx.strokeStyle = getComputedStyle(document.documentElement)
+                .getPropertyValue('--bs-border-color');
+            ctx.lineWidth = 1;
+            ctx.setLineDash([5, 5]);
+
+            [dotLeftX, dotCenterX, dotRightX].forEach(x => {
+                ctx.beginPath();
+                ctx.moveTo(x, 0);
+                ctx.lineTo(x, height);
+                ctx.stroke();
+            });
+
+            ctx.setLineDash([]);
+
+            // 繪製正弦波
+            ctx.beginPath();
+            for (let x = 0; x < width; x++) {
+                const angle = (x / width) * frequency * 2 * Math.PI + phase;
+                const y = centerY + amplitude * Math.sin(angle);
+                
+                if (x === 0) {
+                    ctx.moveTo(x, y);
+                } else {
+                    ctx.lineTo(x, y);
+                }
+            }
+
+            ctx.strokeStyle = '#0d6efd'; // Bootstrap primary
+            ctx.lineWidth = 3;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+            ctx.stroke();
+
+            // 繪製紅點（質點）
+            function drawDot(x, y) {
+                ctx.beginPath();
+                ctx.arc(x, y, dotRadius, 0, Math.PI * 2, false);
+                ctx.fillStyle = '#dc3545'; // Bootstrap danger
+                ctx.fill();
+                ctx.strokeStyle = '#b02a37';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+            }
+
+            // 計算並繪製三個質點
+            [dotLeftX, dotCenterX, dotRightX].forEach(x => {
+                const angle = (x / width) * frequency * 2 * Math.PI + phase;
+                const y = centerY + amplitude * Math.sin(angle);
+                drawDot(x, y);
+            });
+        }
+
+        // 動畫循環
+        function animate() {
+            if (!isPlaying) return;
+            
+            phase -= speed;
+            draw();
+            animationId = requestAnimationFrame(animate);
+        }
+
+        // 播放/暫停控制
+        function togglePlayPause() {
+            isPlaying = !isPlaying;
+            playPauseBtn.setAttribute('aria-pressed', isPlaying);
+            
+            if (isPlaying) {
+                playPauseBtn.innerHTML = '<i class="fa-solid fa-pause" aria-hidden="true"></i> <span>暫停</span>';
+                playPauseBtn.classList.remove('btn-primary');
+                playPauseBtn.classList.add('btn-warning');
+                animate();
+                announceStatus('動畫已開始');
+            } else {
+                playPauseBtn.innerHTML = '<i class="fa-solid fa-play" aria-hidden="true"></i> <span>開始</span>';
+                playPauseBtn.classList.remove('btn-warning');
+                playPauseBtn.classList.add('btn-primary');
+                if (animationId) {
+                    cancelAnimationFrame(animationId);
+                }
+                announceStatus('動畫已暫停');
+            }
+        }
+
+        // 重置
+        function reset() {
+            isPlaying = false;
+            playPauseBtn.setAttribute('aria-pressed', 'false');
+            playPauseBtn.innerHTML = '<i class="fa-solid fa-play" aria-hidden="true"></i> <span>開始</span>';
+            playPauseBtn.classList.remove('btn-warning');
+            playPauseBtn.classList.add('btn-primary');
+            
+            if (animationId) {
+                cancelAnimationFrame(animationId);
+            }
+            
+            phase = 0;
+            speed = 0.05;
+            frequency = 3;
+            
+            speedRange.value = 0.05;
+            speedValue.textContent = '0.05';
+            speedRange.setAttribute('aria-valuenow', '0.05');
+            
+            frequencyRange.value = 3;
+            frequencyValue.textContent = '3';
+            frequencyRange.setAttribute('aria-valuenow', '3');
+            
+            draw();
+            announceStatus('已重置為初始狀態');
+        }
+
+        // 事件監聽
+        playPauseBtn.addEventListener('click', togglePlayPause);
+        resetBtn.addEventListener('click', reset);
+
+        speedRange.addEventListener('input', (e) => {
+            speed = parseFloat(e.target.value);
+            speedValue.textContent = speed.toFixed(2);
+            speedRange.setAttribute('aria-valuenow', speed);
+        });
+
+        frequencyRange.addEventListener('input', (e) => {
+            frequency = parseInt(e.target.value);
+            frequencyValue.textContent = frequency;
+            frequencyRange.setAttribute('aria-valuenow', frequency);
+        });
+
+        window.addEventListener('resize', () => {
+            resizeCanvas();
+            draw();
+        });
+
+        // ===== 鍵盤快捷鍵 =====
+        document.addEventListener('keydown', e => {
+            if(e.target.tagName === 'INPUT') return;
+            
+            if(e.key === ' ' || e.key === 'Spacebar'){
+                e.preventDefault();
+                togglePlayPause();
+            }
+            if(e.key === 'r' || e.key === 'R'){
+                e.preventDefault();
+                reset();
+            }
+            if(e.key === 'ArrowLeft'){
+                e.preventDefault();
+                speed = Math.max(0.01, speed - 0.01);
+                speedRange.value = speed;
+                speedValue.textContent = speed.toFixed(2);
+                speedRange.setAttribute('aria-valuenow', speed);
+            }
+            if(e.key === 'ArrowRight'){
+                e.preventDefault();
+                speed = Math.min(0.2, speed + 0.01);
+                speedRange.value = speed;
+                speedValue.textContent = speed.toFixed(2);
+                speedRange.setAttribute('aria-valuenow', speed);
+            }
+            if(e.key === 'ArrowUp'){
+                e.preventDefault();
+                frequency = Math.min(10, frequency + 1);
+                frequencyRange.value = frequency;
+                frequencyValue.textContent = frequency;
+                frequencyRange.setAttribute('aria-valuenow', frequency);
+            }
+            if(e.key === 'ArrowDown'){
+                e.preventDefault();
+                frequency = Math.max(1, frequency - 1);
+                frequencyRange.value = frequency;
+                frequencyValue.textContent = frequency;
+                frequencyRange.setAttribute('aria-valuenow', frequency);
+            }
+        });
+
+        // 初始化
+        announceStatus('正弦波前進模擬已載入');
+        resizeCanvas();
+        draw();
+    </script>
 </body>
 </html>
