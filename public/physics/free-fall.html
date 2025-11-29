@@ -25,7 +25,6 @@
         <div class="ratio ratio-9x16 mb-3" style="max-width:400px">
           <canvas id="simCanvas" aria-label="自由落體動畫畫布" role="img"></canvas>
         </div>
-        <div id="simStatus" class="live-region small" aria-live="polite" aria-atomic="true">狀態：尚未開始</div>
       </section>
       <aside class="col-12 col-lg-5" aria-labelledby="sec-controls">
         <h2 id="sec-controls" class="h5">控制面板</h2>
@@ -158,7 +157,6 @@
     // 模擬邏輯
     const canvas = document.getElementById('simCanvas');
     const ctx = canvas.getContext('2d');
-    const statusRegion = document.getElementById('simStatus');
     const btnStart = document.getElementById('btnStart');
     const btnPause = document.getElementById('btnPause');
     const btnReset = document.getElementById('btnReset');
@@ -175,7 +173,7 @@
 
     function reset(){
       t = 0; lastTime = null; v = 0; y = h0;
-      statusRegion.textContent = '狀態：已重置';
+      if (window.liveRegion) window.liveRegion.announce('狀態：已重置');
       updateOutputs();
       draw();
       btnPause.disabled = true;
@@ -186,13 +184,17 @@
 
     function start(){
       if(running){return;} // 已在運行
-      running = true; statusRegion.textContent = '狀態：運行中'; btnPause.disabled = false;
+      running = true; 
+      if (window.liveRegion) window.liveRegion.announce('狀態：運行中');
+      btnPause.disabled = false;
       btnStart.setAttribute('aria-pressed','true'); btnStart.classList.add('btn-success');
       requestAnimationFrame(step);
     }
 
     function pause(){
-      running = false; statusRegion.textContent = '狀態：已暫停'; btnStart.setAttribute('aria-pressed','false'); btnStart.classList.remove('btn-success');
+      running = false; 
+      if (window.liveRegion) window.liveRegion.announce('狀態：已暫停');
+      btnStart.setAttribute('aria-pressed','false'); btnStart.classList.remove('btn-success');
     }
 
     function updateOutputs(){
@@ -230,7 +232,11 @@
       // 更新運動 (簡單物理公式)
       v = g * t;
       y = h0 - 0.5 * g * t * t;
-      if(y <= 0){ y = 0; running = false; statusRegion.textContent = '狀態：已著地'; }
+      if(y <= 0){ 
+        y = 0; 
+        running = false; 
+        if (window.liveRegion) window.liveRegion.announce('狀態：已著地');
+      }
       else { t += dt; }
       updateOutputs();
       draw();

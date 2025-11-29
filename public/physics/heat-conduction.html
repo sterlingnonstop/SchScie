@@ -9,14 +9,10 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Font Awesome 6 -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Modular CSS -->
+    <link rel="stylesheet" href="../assets/css/common.css">
+    <link rel="stylesheet" href="../assets/css/accessibility.css">
     <style>
-        /* Skip link */
-        .skip-link {position:absolute;left:-1000px;top:0;background:#000;color:#fff;padding:.5rem 1rem;z-index:1000;}
-        .skip-link:focus {left:0;}
-        
-        /* Focus visibility */
-        :focus-visible {outline:3px solid #ff9800;outline-offset:2px;}
-        
         body {
             font-family: system-ui, -apple-system, sans-serif;
             background-color: var(--bs-body-bg);
@@ -93,18 +89,8 @@
 
     <a href="#main" class="skip-link">跳到主內容</a>
     
-    <!-- 導航列 -->
-    <nav class="navbar navbar-expand-lg bg-body-tertiary position-fixed top-0 w-100" style="z-index: 1000;">
-        <div class="container-fluid">
-            <a class="navbar-brand" href="../index.html" aria-label="返回首頁">
-                <i class="fa-solid fa-house" aria-hidden="true"></i>
-                <span class="ms-2">首頁</span>
-            </a>
-            <button id="themeToggle" class="btn btn-outline-secondary" type="button" aria-pressed="false" aria-label="切換深淺主題">
-                <i class="fa-solid fa-circle-half-stroke" aria-hidden="true"></i>
-            </button>
-        </div>
-    </nav>
+    <!-- Navbar Container -->
+    <div id="navbarContainer"></div>
 
     <main id="main" class="container-fluid" style="margin-top: 70px; max-width: 1400px;" tabindex="-1">
         <div class="row g-4">
@@ -152,9 +138,6 @@
                         <p class="card-text small mb-4">
                             觀察兩個緊鄰的固體。當左邊物體溫度升高振動變快時，透過 <strong class="text-primary">粒子碰撞</strong> 將能量傳遞給右邊的粒子。
                         </p>
-
-                        <!-- 即時狀態通知 -->
-                        <div id="statusRegion" class="visually-hidden" aria-live="polite" aria-atomic="true">初始化中</div>
 
                         <!-- 溫度控制 -->
                         <div class="card bg-danger bg-opacity-10 border-danger mb-4">
@@ -241,71 +224,51 @@
         </div>
     </main>
 
+    <!-- Footer Container -->
+    <div id="footerContainer"></div>
+
     <!-- Bootstrap JS Bundle -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script>
-    <!-- Bootstrap JS Bundle -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script>
-        // ===== 主題切換功能 =====
-        function initThemeToggle(btn){
-            function setTheme(t){
-                document.documentElement.setAttribute('data-bs-theme',t);
-                localStorage.setItem('theme',t);
-                btn.setAttribute('aria-pressed', t==='dark');
-            }
-            const stored = localStorage.getItem('theme');
-            if(stored){setTheme(stored);} 
-            else if(window.matchMedia('(prefers-color-scheme: dark)').matches){setTheme('dark');}
-            btn.addEventListener('click',()=>{
-                const cur=document.documentElement.getAttribute('data-bs-theme')||'light';
-                setTheme(cur==='light'?'dark':'light');
-            });
-        }
-        initThemeToggle(document.getElementById('themeToggle'));
+    
+    <!-- ES Module: Load Navigation & Theme -->
+    <script type="module">
+        import { initThemeToggle } from '../assets/js/theme.js';
+        import { loadNavigation } from '../assets/js/navigation.js';
+        import { createLiveRegion, KeyboardManager } from '../assets/js/a11y.js';
 
-        // ===== Live Region 助手 =====
-        function createLiveRegion(id, {interval=200}={}){
-            const el = document.getElementById(id);
-            let last = 0; let pending;
-            return function announce(msg){
-                const now = performance.now();
-                if(now - last < interval){ pending = msg; return; }
-                el.textContent = msg; last = now; pending = undefined;
-                setTimeout(()=>{ 
-                    if(pending){ 
-                        el.textContent = pending; 
-                        last = performance.now(); 
-                        pending = undefined; 
-                    }
-                }, interval);
-            };
-        }
-        const announceStatus = createLiveRegion('statusRegion');
-
-        // ===== 鍵盤快捷鍵 =====
-        document.addEventListener('keydown', e => {
-            if(e.target.tagName === 'INPUT') return; // 避免干擾輸入
-            
-            if(e.key === 'r' || e.key === 'R'){
-                e.preventDefault();
-                document.getElementById('resetBtn').click();
-            }
-            if(e.key === 'ArrowLeft'){
-                e.preventDefault();
-                const slider = document.getElementById('heatSlider');
-                slider.value = Math.max(parseInt(slider.min), parseInt(slider.value) - 10);
-                slider.dispatchEvent(new Event('input'));
-            }
-            if(e.key === 'ArrowRight'){
-                e.preventDefault();
-                const slider = document.getElementById('heatSlider');
-                slider.value = Math.min(parseInt(slider.max), parseInt(slider.value) + 10);
-                slider.dispatchEvent(new Event('input'));
-            }
+        // 載入導覽和頁尾
+        await loadNavigation({
+            baseUrl: '..',
+            navbarPath: '../assets/templates/navbar.html',
+            footerPath: '../assets/templates/footer.html'
         });
 
-        // ===== 模擬主程式 =====
+        // 初始化主題切換
+        initThemeToggle();
+
+        // 建立 Live Region
+        window.liveRegion = createLiveRegion({ id: 'simLiveRegion', throttle: 300 });
+
+        // 鍵盤快捷鍵
+        const keyboardManager = new KeyboardManager();
+        keyboardManager.register('r', () => {
+            document.getElementById('resetBtn').click();
+        }, { description: '重置' });
+        keyboardManager.register('ArrowLeft', () => {
+            const slider = document.getElementById('heatSlider');
+            slider.value = Math.max(parseInt(slider.min), parseInt(slider.value) - 10);
+            slider.dispatchEvent(new Event('input'));
+        }, { description: '降低溫度' });
+        keyboardManager.register('ArrowRight', () => {
+            const slider = document.getElementById('heatSlider');
+            slider.value = Math.min(parseInt(slider.max), parseInt(slider.value) + 10);
+            slider.dispatchEvent(new Event('input'));
+        }, { description: '升高溫度' });
+    </script>
+    
+    <!-- Page-Specific Simulation Logic -->
+    <script>
+        // ===== 熱傳導模擬主程式 =====
         const canvas = document.getElementById('simCanvas');
         const ctx = canvas.getContext('2d');
         const slider = document.getElementById('heatSlider');
@@ -571,7 +534,9 @@
             targetLeftTemp = parseInt(e.target.value);
             leftTempDisplay.textContent = targetLeftTemp;
             slider.setAttribute('aria-valuenow', targetLeftTemp);
-            announceStatus(`左側溫度設為 ${targetLeftTemp} 度`);
+            if (window.liveRegion) {
+                window.liveRegion.announce(`左側溫度設為 ${targetLeftTemp} 度`);
+            }
         });
 
         resetBtn.addEventListener('click', () => {
@@ -584,11 +549,15 @@
                 }
             }
             rightTempDisplay.textContent = 25;
-            announceStatus('已重置右側溫度為 25 度');
+            if (window.liveRegion) {
+                window.liveRegion.announce('已重置右側溫度為 25 度');
+            }
         });
 
         // 初始化
-        announceStatus('熱傳導模擬已載入');
+        if (window.liveRegion) {
+            window.liveRegion.announce('熱傳導模擬已載入');
+        }
         setTimeout(() => {
             resizeCanvas(); 
             animate();
