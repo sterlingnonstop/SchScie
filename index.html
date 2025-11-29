@@ -3,187 +3,83 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>國中數理互動學習站</title>
+  <title>國中自然科學模擬動畫</title>
   <meta name="description" content="國中物理、數學、化學互動式教學動畫集合" />
   <!-- Bootstrap 5.3 CSS -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" />
   <!-- Font Awesome 6 -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
-  <style>
-    /* Skip link */
-    .skip-link {position:absolute;left:-1000px;top:0;background:#000;color:#fff;padding:.5rem 1rem;z-index:1000;}
-    .skip-link:focus {left:0;}
-    /* Focus ring override for better visibility */
-    :focus-visible {outline:3px solid #ff9800;outline-offset:2px;}
-    .card:hover, .card:focus-within {box-shadow:0 0 0 4px rgba(33,150,243,.3);}    
-  </style>
+  <!-- Modular CSS -->
+  <link rel="stylesheet" href="./assets/css/common.css" />
+  <link rel="stylesheet" href="./assets/css/accessibility.css" />
 </head>
 <body class="d-flex flex-column min-vh-100">
   <a href="#main" class="skip-link">跳到主內容</a>
-  <header>
-    <nav class="navbar navbar-expand-lg bg-body-tertiary" aria-label="主導覽">
-      <div class="container-fluid">
-        <a class="navbar-brand d-flex align-items-center" href="index.html">
-          <i class="fa-solid fa-atom me-2" aria-hidden="true"></i>
-          <span>國中數理互動學習</span>
-        </a>
-        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarContent" aria-controls="navbarContent" aria-expanded="false" aria-label="切換導覽"> 
-          <span class="navbar-toggler-icon"></span>
-        </button>
-        <div class="collapse navbar-collapse" id="navbarContent">
-          <ul class="navbar-nav me-auto mb-2 mb-lg-0">
-            <li class="nav-item"><a class="nav-link" href="#physics" aria-describedby="sec-physics">物理</a></li>
-            <li class="nav-item"><a class="nav-link" href="#math" aria-describedby="sec-math">數學</a></li>
-            <li class="nav-item"><a class="nav-link" href="#chemistry" aria-describedby="sec-chem">化學</a></li>
-          </ul>
-          <div class="d-flex gap-2 align-items-center">
-            <button id="themeToggle" class="btn btn-outline-secondary" type="button" aria-pressed="false" aria-label="切換深淺主題">
-              <i class="fa-solid fa-circle-half-stroke" aria-hidden="true"></i> 主題
-            </button>
-            <form class="" role="search" aria-label="站內搜尋">
-              <div class="input-group">
-                <label for="search" class="visually-hidden">搜尋動畫</label>
-                <input id="search" class="form-control" type="search" placeholder="搜尋主題" aria-label="搜尋主題">
-                <button class="btn btn-primary" type="submit" aria-label="送出搜尋"><i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i></button>
-              </div>
-            </form>
-          </div>
-        </div>
-      </div>
-    </nav>
-  </header>
+  
+  <!-- Navbar Container -->
+  <div id="navbarContainer"></div>
   <main id="main" class="flex-grow-1 container py-4" tabindex="-1">
     <h1 class="h3 mb-4">互動式教學動畫總覽</h1>
     <p class="lead">選擇一個主題進入互動式模擬，探索概念、調整參數、觀察變化。</p>
 
-    <!-- Physics Section -->
-    <section id="physics" aria-labelledby="sec-physics" class="mb-5">
-      <div class="d-flex justify-content-between align-items-center mb-2">
-        <h2 id="sec-physics" class="h4 mb-0"><i class="fa-solid fa-bolt" aria-hidden="true"></i> 物理 Physics</h2>
-        <span class="badge text-bg-primary">基礎力學</span>
-      </div>
-      <div class="row g-3">
-        <div class="col-12 col-sm-6 col-lg-4">
-          <div class="card h-100" tabindex="0">
-            <div class="card-body">
-              <h3 class="h5 card-title">自由落體</h3>
-              <p class="card-text small">觀察物體在重力作用下的加速度與位移變化。</p>
-              <a href="physics/free-fall.html" class="btn btn-sm btn-primary" aria-label="開啟自由落體互動模擬">進入 <i class="fa-solid fa-arrow-right" aria-hidden="true"></i></a>
-            </div>
+    <!-- Filter Panel -->
+    <div id="filterPanel" class="card mb-4 border-primary">
+      <div class="card-body">
+        <div class="row g-3 align-items-end">
+          <div class="col-12 col-md-3">
+            <label for="filterSubject" class="form-label small fw-semibold mb-1">
+              <i class="fa-solid fa-layer-group" aria-hidden="true"></i> 科目篩選
+            </label>
+            <select id="filterSubject" class="form-select" aria-label="選擇科目">
+              <option value="all" selected>全部科目</option>
+              <option value="physics">理化</option>
+              <option value="math">數學</option>
+            </select>
           </div>
-        </div>
-        <div class="col-12 col-sm-6 col-lg-4">
-          <div class="card h-100" tabindex="0">
-            <div class="card-body">
-              <h3 class="h5 card-title">拋體運動</h3>
-              <p class="card-text small">調整初速度與角度，探索拋物線與射程。</p>
-              <a href="#" class="btn btn-sm btn-secondary disabled" aria-disabled="true">即將推出</a>
-            </div>
+          <div class="col-12 col-md-4">
+            <label for="filterGrade" class="form-label small fw-semibold mb-1">
+              <i class="fa-solid fa-graduation-cap" aria-hidden="true"></i> 年級篩選
+            </label>
+            <select id="filterGrade" class="form-select" aria-label="選擇年級">
+              <option value="all" selected>全部年級</option>
+              <optgroup label="國一">
+                <option value="1-1">國一上</option>
+                <option value="1-2">國一下</option>
+              </optgroup>
+              <optgroup label="國二">
+                <option value="2-1">國二上</option>
+                <option value="2-2">國二下</option>
+              </optgroup>
+              <optgroup label="國三">
+                <option value="3-1">國三上</option>
+                <option value="3-2">國三下</option>
+              </optgroup>
+            </select>
           </div>
-        </div>
-        <div class="col-12 col-sm-6 col-lg-4">
-          <div class="card h-100" tabindex="0">
-            <div class="card-body">
-              <h3 class="h5 card-title">單擺運動</h3>
-              <p class="card-text small">研究擺長與週期的關係。</p>
-              <a href="#" class="btn btn-sm btn-secondary disabled" aria-disabled="true">即將推出</a>
-            </div>
+          <div class="col-12 col-md-auto">
+            <button id="resetFilters" class="btn btn-outline-secondary" type="button" aria-label="重置所有篩選條件">
+              <i class="fa-solid fa-rotate-left" aria-hidden="true"></i> 重置
+            </button>
           </div>
-        </div>
-        <div class="col-12 col-sm-6 col-lg-4">
-          <div class="card h-100" tabindex="0">
-            <div class="card-body">
-              <h3 class="h5 card-title">疏密波（縱波）</h3>
-              <p class="card-text small">觀察縱波密部與疏部的傳播與質點振動。</p>
-              <a href="physics/hoz-waves.html" class="btn btn-sm btn-primary" aria-label="開啟疏密波互動模擬">進入 <i class="fa-solid fa-arrow-right" aria-hidden="true"></i></a>
-            </div>
-          </div>
-        </div>
-        <div class="col-12 col-sm-6 col-lg-4">
-          <div class="card h-100" tabindex="0">
-            <div class="card-body">
-              <h3 class="h5 card-title">凸透鏡成像</h3>
-              <p class="card-text small">拖曳物距觀察像距與放大率的變化，判斷實像與虛像性質。</p>
-              <a href="physics/convex-lens-imaging.html" class="btn btn-sm btn-primary" aria-label="進入凸透鏡成像互動模擬">進入 <i class="fa-solid fa-arrow-right" aria-hidden="true"></i></a>
-            </div>
-          </div>
-        </div>
-        <div class="col-12 col-sm-6 col-lg-4">
-          <div class="card h-100" tabindex="0">
-            <div class="card-body">
-              <h3 class="h5 card-title">溫度與氣體粒子活動</h3>
-              <p class="card-text small">調整溫度觀察理想氣體粒子的速度與碰撞頻率變化，理解平均動能。</p>
-              <a href="physics/kinetic-theory-gas.html" class="btn btn-sm btn-primary" aria-label="進入溫度與氣體粒子活動互動模擬">進入 <i class="fa-solid fa-arrow-right" aria-hidden="true"></i></a>
-            </div>
-          </div>
-        </div>
-        <div class="col-12 col-sm-6 col-lg-4">
-          <div class="card h-100" tabindex="0">
-            <div class="card-body">
-              <h3 class="h5 card-title">熱傳導</h3>
-              <p class="card-text small">觀察固體粒子碰撞如何傳遞熱能，理解溫度與粒子振動的關係。</p>
-              <a href="physics/heat-conduction.html" class="btn btn-sm btn-primary" aria-label="進入熱傳導互動模擬">進入 <i class="fa-solid fa-arrow-right" aria-hidden="true"></i></a>
-            </div>
-          </div>
-        </div>
-        <div class="col-12 col-sm-6 col-lg-4">
-          <div class="card h-100" tabindex="0">
-            <div class="card-body">
-              <h3 class="h5 card-title">正弦波前進</h3>
-              <p class="card-text small">觀察橫波傳播過程，質點只做垂直振動，波形向前傳遞能量。</p>
-              <a href="physics/sine-wave-propagation.html" class="btn btn-sm btn-primary" aria-label="進入正弦波前進互動模擬">進入 <i class="fa-solid fa-arrow-right" aria-hidden="true"></i></a>
-            </div>
+          <div class="col-12 col-md-auto ms-auto">
+            <span id="resultBadge" class="badge text-bg-info fs-6" role="status" aria-live="polite">
+              載入中...
+            </span>
           </div>
         </div>
       </div>
-    </section>
+    </div>
 
-    <!-- Math Section -->
-    <section id="math" aria-labelledby="sec-math" class="mb-5">
-      <div class="d-flex justify-content-between align-items-center mb-2">
-        <h2 id="sec-math" class="h4 mb-0"><i class="fa-solid fa-square-root-variable" aria-hidden="true"></i> 數學 Math</h2>
-        <span class="badge text-bg-success">函數與幾何</span>
-      </div>
-      <div class="row g-3">
-        <div class="col-12 col-sm-6 col-lg-4">
-          <div class="card h-100" tabindex="0">
-            <div class="card-body">
-              <h3 class="h5 card-title">畢氏定理</h3>
-              <p class="card-text small">視覺化展示直角三角形邊長關係。</p>
-              <a href="#" class="btn btn-sm btn-secondary disabled" aria-disabled="true">即將推出</a>
-            </div>
-          </div>
+    <!-- 動態渲染容器 -->
+    <div id="mainContent">
+      <!-- 載入狀態 -->
+      <div class="text-center py-5">
+        <div class="spinner-border text-primary" role="status">
+          <span class="visually-hidden">載入中...</span>
         </div>
-        <div class="col-12 col-sm-6 col-lg-4">
-          <div class="card h-100" tabindex="0">
-            <div class="card-body">
-              <h3 class="h5 card-title">函數繪圖</h3>
-              <p class="card-text small">輸入函數表達式生成對應曲線。</p>
-              <a href="#" class="btn btn-sm btn-secondary disabled" aria-disabled="true">即將推出</a>
-            </div>
-          </div>
-        </div>
+        <p class="mt-3 text-muted">正在載入動畫資料...</p>
       </div>
-    </section>
-
-    <!-- Chemistry Section -->
-    <section id="chemistry" aria-labelledby="sec-chem" class="mb-5">
-      <div class="d-flex justify-content-between align-items-center mb-2">
-        <h2 id="sec-chem" class="h4 mb-0"><i class="fa-solid fa-flask" aria-hidden="true"></i> 化學 Chemistry</h2>
-        <span class="badge text-bg-warning">元素與結構</span>
-      </div>
-      <div class="row g-3">
-        <div class="col-12 col-sm-6 col-lg-4">
-          <div class="card h-100" tabindex="0">
-            <div class="card-body">
-              <h3 class="h5 card-title">週期表互動</h3>
-              <p class="card-text small">探索元素性質與分類。</p>
-              <a href="#" class="btn btn-sm btn-secondary disabled" aria-disabled="true">即將推出</a>
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
+    </div>
 
     <section class="mb-4" aria-labelledby="sec-accessibility">
       <h2 id="sec-accessibility" class="h5">無障礙與操作說明</h2>
@@ -194,32 +90,315 @@
       </ul>
     </section>
   </main>
-  <footer class="mt-auto py-3 bg-light border-top" role="contentinfo">
-    <div class="container small d-flex flex-column flex-sm-row justify-content-between gap-2">
-      <div>&copy; 2025 國中數理互動學習站</div>
-      <div class="d-flex gap-3">
-        <a class="text-decoration-none" href="#" aria-label="隱私政策">隱私</a>
-        <a class="text-decoration-none" href="#" aria-label="使用條款">條款</a>
-      </div>
-    </div>
-  </footer>
+  
+  <!-- Footer Container -->
+  <div id="footerContainer"></div>
+  
   <!-- Bootstrap JS Bundle -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-  <script>
-    // 主題切換 (light/dark) 符合 prefers-reduced-motion 不做動畫過渡
-    const toggleBtn = document.getElementById('themeToggle');
-    const root = document.documentElement;
-    function setTheme(theme){
-      document.documentElement.setAttribute('data-bs-theme', theme);
-      localStorage.setItem('theme', theme);
-      toggleBtn.setAttribute('aria-pressed', theme === 'dark');
-    }
-    const saved = localStorage.getItem('theme');
-    if(saved){setTheme(saved);} else if(window.matchMedia('(prefers-color-scheme: dark)').matches){setTheme('dark');}
-    toggleBtn.addEventListener('click', ()=> {
-      const current = document.documentElement.getAttribute('data-bs-theme') || 'light';
-      setTheme(current === 'light' ? 'dark' : 'light');
+  
+  <!-- ES Module Script -->
+  <script type="module">
+    import { initThemeToggle } from './assets/js/theme.js';
+    import { loadNavigation, setActiveNavItem } from './assets/js/navigation.js';
+
+    // 載入導覽和頁尾
+    await loadNavigation({
+      baseUrl: '.',
+      navbarPath: './assets/templates/navbar.html',
+      footerPath: './assets/templates/footer.html'
     });
+
+    // 初始化主題切換（navbar 載入後）
+    initThemeToggle();
+
+    // 設定首頁為 active
+    setActiveNavItem(window.location.pathname);
+  </script>
+  
+  <!-- 原有的動畫載入邏輯 -->
+  <script>
+    // ==================== JSON 資料驅動渲染引擎 ====================
+    let animationsData = null;
+
+    // 載入 JSON 並初始化
+    async function loadAnimations() {
+      try {
+        const response = await fetch('data/animations.json');
+        
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        
+        animationsData = await response.json();
+        
+        // 驗證資料
+        validateData(animationsData);
+        
+        // 渲染內容
+        renderSubjectSections(animationsData.subjects);
+        renderAnimationCards(animationsData.animations);
+        
+        // 初始化篩選
+        initializeFilters(animationsData);
+        
+        console.log(`✅ 載入完成：共 ${animationsData.animations.length} 個動畫`);
+        
+      } catch (error) {
+        console.error('載入動畫資料失敗:', error);
+        showErrorState(error.message);
+      }
+    }
+
+    // 資料驗證
+    function validateData(data) {
+      if (!data.animations || !Array.isArray(data.animations)) {
+        throw new Error('資料格式錯誤：缺少 animations 陣列');
+      }
+      if (!data.subjects || !Array.isArray(data.subjects)) {
+        throw new Error('資料格式錯誤：缺少 subjects 陣列');
+      }
+      
+      data.animations.forEach((anim, index) => {
+        const required = ['id', 'title', 'subject', 'grade', 'description', 'url', 'status'];
+        required.forEach(field => {
+          if (!anim[field]) {
+            throw new Error(`動畫 #${index} (${anim.id || '未知'}) 缺少必要欄位: ${field}`);
+          }
+        });
+      });
+    }
+
+    // 渲染科目區段
+    function renderSubjectSections(subjects) {
+      const container = document.getElementById('mainContent');
+      container.innerHTML = ''; // 清空載入畫面
+      
+      subjects.forEach(subject => {
+        const section = document.createElement('section');
+        section.id = subject.id;
+        section.className = 'mb-5';
+        section.setAttribute('aria-labelledby', `sec-${subject.id}`);
+        
+        section.innerHTML = `
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <h2 id="sec-${subject.id}" class="h4 mb-0">
+              <i class="${subject.icon}" aria-hidden="true"></i> 
+              ${subject.name}
+            </h2>
+            <span class="badge text-bg-${subject.color}">${subject.badge}</span>
+          </div>
+          <div class="row g-3" data-subject-container="${subject.id}"></div>
+        `;
+        
+        container.appendChild(section);
+      });
+    }
+
+    // 渲染動畫卡片
+    function renderAnimationCards(animations) {
+      // 依科目分組
+      const grouped = animations.reduce((acc, anim) => {
+        if (!acc[anim.subject]) acc[anim.subject] = [];
+        acc[anim.subject].push(anim);
+        return acc;
+      }, {});
+      
+      // 渲染每個科目的卡片
+      Object.entries(grouped).forEach(([subject, cards]) => {
+        const container = document.querySelector(`[data-subject-container="${subject}"]`);
+        if (!container) {
+          console.warn(`找不到科目容器: ${subject}`);
+          return;
+        }
+        
+        container.innerHTML = '';
+        
+        cards.forEach(anim => {
+          const cardElement = createCardElement(anim);
+          container.appendChild(cardElement);
+        });
+      });
+    }
+
+    // 建立單一卡片元素
+    function createCardElement(anim) {
+      const col = document.createElement('div');
+      col.className = 'col-12 col-sm-6 col-lg-4';
+      
+      // 根據 status 決定按鈕
+      let buttonHTML = '';
+      if (anim.status === 'active') {
+        buttonHTML = `
+          <a href="${anim.url}" class="btn btn-sm btn-primary" 
+             aria-label="進入${anim.title}互動模擬">
+            進入 <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
+          </a>
+        `;
+      } else if (anim.status === 'coming-soon') {
+        buttonHTML = `
+          <button class="btn btn-sm btn-secondary" disabled aria-disabled="true">
+            即將推出
+          </button>
+        `;
+      }
+      
+      col.innerHTML = `
+        <div class="card h-100" tabindex="0" 
+             data-subject="${anim.subject}" 
+             data-grade="${anim.grade}"
+             data-chapter="${anim.chapter || ''}"
+             data-keywords="${anim.keywords.join(',')}"
+             data-animation-id="${anim.id}">
+          <div class="card-body">
+            <h3 class="h5 card-title">
+              ${anim.icon ? `<i class="${anim.icon}" aria-hidden="true"></i> ` : ''}
+              ${anim.title}
+              ${anim.featured ? '<span class="badge text-bg-danger ms-1">NEW</span>' : ''}
+            </h3>
+            <p class="card-text small">${anim.description}</p>
+            ${buttonHTML}
+          </div>
+        </div>
+      `;
+      
+      return col;
+    }
+
+    // 錯誤狀態顯示
+    function showErrorState(message) {
+      const mainContent = document.getElementById('mainContent');
+      mainContent.innerHTML = `
+        <div class="alert alert-danger" role="alert">
+          <h4 class="alert-heading">
+            <i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i>
+            載入失敗
+          </h4>
+          <p>無法載入動畫資料：${message}</p>
+          <hr>
+          <p class="mb-0">
+            <button class="btn btn-outline-danger" onclick="location.reload()">
+              <i class="fa-solid fa-rotate-right" aria-hidden="true"></i>
+              重新載入
+            </button>
+          </p>
+        </div>
+      `;
+    }
+
+    // ==================== 篩選系統整合 ====================
+    function initializeFilters(data) {
+      const filterSubject = document.getElementById('filterSubject');
+      const filterGrade = document.getElementById('filterGrade');
+      const resetBtn = document.getElementById('resetFilters');
+      const resultBadge = document.getElementById('resultBadge');
+
+      // 執行篩選
+      function applyFilters() {
+        const selectedSubject = filterSubject.value;
+        const selectedGrade = filterGrade.value;
+        let visibleCount = 0;
+
+        const allCards = document.querySelectorAll('[data-animation-id]');
+
+        allCards.forEach(card => {
+          const cardSubject = card.getAttribute('data-subject');
+          const cardGrade = card.getAttribute('data-grade');
+          
+          const subjectMatch = selectedSubject === 'all' || cardSubject === selectedSubject;
+          const gradeMatch = selectedGrade === 'all' || cardGrade === selectedGrade;
+          
+          const isVisible = subjectMatch && gradeMatch;
+          
+          const colElement = card.closest('.col-12');
+          if (colElement) {
+            colElement.style.display = isVisible ? '' : 'none';
+          }
+          
+          if (isVisible) visibleCount++;
+        });
+
+        updateResultBadge(visibleCount, allCards.length);
+        updateEmptySections();
+      }
+
+      // 更新結果徽章
+      function updateResultBadge(visible, total) {
+        if (visible === total) {
+          resultBadge.textContent = `顯示全部 ${total} 項`;
+          resultBadge.className = 'badge text-bg-info fs-6';
+        } else if (visible === 0) {
+          resultBadge.textContent = '無符合結果';
+          resultBadge.className = 'badge text-bg-warning fs-6';
+        } else {
+          resultBadge.textContent = `顯示 ${visible} / ${total} 項`;
+          resultBadge.className = 'badge text-bg-success fs-6';
+        }
+      }
+
+      // 更新空白區段提示
+      function updateEmptySections() {
+        const sections = document.querySelectorAll('section[id]');
+        
+        sections.forEach(section => {
+          const cards = section.querySelectorAll('[data-animation-id]');
+          let hasVisible = false;
+          
+          cards.forEach(card => {
+            const colElement = card.closest('.col-12');
+            if (colElement && colElement.style.display !== 'none') {
+              hasVisible = true;
+            }
+          });
+
+          const oldEmptyMsg = section.querySelector('.empty-state-message');
+          if (oldEmptyMsg) oldEmptyMsg.remove();
+
+          if (!hasVisible && cards.length > 0) {
+            const row = section.querySelector('.row');
+            if (row) {
+              const emptyMsg = document.createElement('div');
+              emptyMsg.className = 'col-12 empty-state-message';
+              emptyMsg.innerHTML = `
+                <div class="alert alert-secondary" role="alert">
+                  <i class="fa-solid fa-circle-info" aria-hidden="true"></i> 
+                  此區段無符合篩選條件的項目
+                </div>
+              `;
+              row.appendChild(emptyMsg);
+            }
+          }
+        });
+      }
+
+      // 重置篩選
+      function resetFilters() {
+        filterSubject.value = 'all';
+        filterGrade.value = 'all';
+        applyFilters();
+        filterSubject.focus();
+      }
+
+      // 事件監聽
+      filterSubject.addEventListener('change', applyFilters);
+      filterGrade.addEventListener('change', applyFilters);
+      resetBtn.addEventListener('click', resetFilters);
+
+      // 鍵盤快捷鍵
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && 
+            (document.activeElement === filterSubject || 
+             document.activeElement === filterGrade)) {
+          resetFilters();
+        }
+      });
+
+      // 初始化執行一次
+      applyFilters();
+    }
+
+    // ==================== 頁面載入時執行 ====================
+    document.addEventListener('DOMContentLoaded', loadAnimations);
   </script>
 </body>
 </html>

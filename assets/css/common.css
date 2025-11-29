@@ -1,0 +1,216 @@
+/**
+ * 全站共用樣式
+ * 包含：CSS 變數、Skip Link、焦點樣式、卡片效果、Canvas 容器、Range Slider
+ * 版本：1.0.0
+ * 最後更新：2025-11-29
+ */
+
+/* ==================== CSS 變數定義 ==================== */
+:root {
+  --site-primary: #0d6efd;
+  --site-focus-color: #ff9800;
+  --site-focus-width: 3px;
+  --site-border-radius: 0.75rem;
+  --site-shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.1);
+  --site-shadow-md: 0 4px 8px rgba(0, 0, 0, 0.15);
+  --site-shadow-lg: 0 8px 16px rgba(0, 0, 0, 0.2);
+}
+
+/* ==================== Skip Link ==================== */
+.skip-link {
+  position: absolute;
+  left: -1000px;
+  top: 0;
+  background: #000;
+  color: #fff;
+  padding: 0.5rem 1rem;
+  z-index: 1000;
+  text-decoration: none;
+  border-radius: 0 0 4px 0;
+  font-weight: 600;
+}
+
+.skip-link:focus {
+  left: 0;
+}
+
+/* ==================== 焦點樣式統一 ==================== */
+:focus-visible {
+  outline: var(--site-focus-width) solid var(--site-focus-color);
+  outline-offset: 2px;
+}
+
+/* 移除 Bootstrap 預設 focus-ring */
+.btn:focus-visible,
+.form-control:focus-visible,
+.form-select:focus-visible {
+  box-shadow: 0 0 0 0.25rem rgba(255, 152, 0, 0.25);
+}
+
+/* ==================== 卡片懸停效果 ==================== */
+.card:hover, 
+.card:focus-within {
+  box-shadow: 0 0 0 4px rgba(33, 150, 243, 0.3);
+  transition: box-shadow 0.2s ease;
+}
+
+/* 卡片內按鈕焦點時不重複外框 */
+.card:focus-within .btn:focus-visible {
+  box-shadow: 0 0 0 0.2rem rgba(255, 152, 0, 0.5);
+}
+
+/* ==================== Canvas 容器標準樣式 ==================== */
+.canvas-container {
+  position: relative;
+  box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.1);
+  background-color: var(--bs-body-bg);
+  border-radius: var(--site-border-radius);
+  overflow: hidden;
+  width: 100%;
+  aspect-ratio: 4/3;
+}
+
+.canvas-container canvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+/* Canvas 上的浮動資訊區 */
+.canvas-overlay {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  background: rgba(255, 255, 255, 0.9);
+  padding: 0.5rem 0.75rem;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  box-shadow: var(--site-shadow-sm);
+  backdrop-filter: blur(4px);
+}
+
+[data-bs-theme="dark"] .canvas-overlay {
+  background: rgba(0, 0, 0, 0.8);
+  color: #fff;
+}
+
+/* ==================== Range Slider 美化 ==================== */
+input[type=range].form-range {
+  height: 24px;
+  cursor: pointer;
+}
+
+/* Chrome/Safari Slider Thumb */
+input[type=range].form-range::-webkit-slider-thumb {
+  height: 22px;
+  width: 22px;
+  background: #fff;
+  border: 2px solid var(--site-primary);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  cursor: pointer;
+}
+
+input[type=range].form-range::-webkit-slider-thumb:hover {
+  transform: scale(1.1);
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.3);
+}
+
+input[type=range].form-range::-webkit-slider-runnable-track {
+  height: 6px;
+  background: linear-gradient(to right, #0d6efd, #dc3545);
+  border-radius: 4px;
+}
+
+/* Firefox Slider Thumb */
+input[type=range].form-range::-moz-range-thumb {
+  height: 22px;
+  width: 22px;
+  background: #fff;
+  border: 2px solid var(--site-primary);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+input[type=range].form-range::-moz-range-thumb:hover {
+  transform: scale(1.1);
+}
+
+input[type=range].form-range::-moz-range-track {
+  height: 6px;
+  background: linear-gradient(to right, #0d6efd, #dc3545);
+  border-radius: 4px;
+}
+
+/* ==================== 按鈕組樣式強化 ==================== */
+.btn-group-animation {
+  gap: 0.5rem;
+}
+
+.btn-group-animation .btn {
+  min-width: 100px;
+}
+
+/* ==================== 表單增強 ==================== */
+.form-label-with-icon {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.form-range-labels {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.75rem;
+  color: var(--bs-secondary-color);
+  margin-top: 0.25rem;
+}
+
+/* ==================== 載入動畫 ==================== */
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+.loading-pulse {
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+/* ==================== 工具類別 ==================== */
+.text-shadow {
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.backdrop-blur {
+  backdrop-filter: blur(8px);
+}
+
+/* ==================== 響應式調整 ==================== */
+@media (max-width: 576px) {
+  .canvas-container {
+    aspect-ratio: 3/4;
+  }
+  
+  .btn-group-animation .btn {
+    min-width: auto;
+    font-size: 0.875rem;
+  }
+}
+
+/* ==================== 列印樣式 ==================== */
+@media print {
+  .skip-link,
+  nav,
+  footer,
+  .btn,
+  .form-control,
+  .form-range {
+    display: none !important;
+  }
+  
+  .canvas-container {
+    border: 1px solid #000;
+    page-break-inside: avoid;
+  }
+}
