@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="zh-Hant" data-bs-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>國中數理互動學習站</title>
+  <meta name="description" content="國中物理、數學、化學互動式教學動畫集合" />
+  <!-- Bootstrap 5.3 CSS -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" />
+  <!-- Font Awesome 6 -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <style>
+    /* Skip link */
+    .skip-link {position:absolute;left:-1000px;top:0;background:#000;color:#fff;padding:.5rem 1rem;z-index:1000;}
+    .skip-link:focus {left:0;}
+    /* Focus ring override for better visibility */
+    :focus-visible {outline:3px solid #ff9800;outline-offset:2px;}
+    .card:hover, .card:focus-within {box-shadow:0 0 0 4px rgba(33,150,243,.3);}    
+  </style>
+</head>
+<body class="d-flex flex-column min-vh-100">
+  <a href="#main" class="skip-link">跳到主內容</a>
+  <header>
+    <nav class="navbar navbar-expand-lg bg-body-tertiary" aria-label="主導覽">
+      <div class="container-fluid">
+        <a class="navbar-brand d-flex align-items-center" href="index.html">
+          <i class="fa-solid fa-atom me-2" aria-hidden="true"></i>
+          <span>國中數理互動學習</span>
+        </a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarContent" aria-controls="navbarContent" aria-expanded="false" aria-label="切換導覽"> 
+          <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarContent">
+          <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+            <li class="nav-item"><a class="nav-link" href="#physics" aria-describedby="sec-physics">物理</a></li>
+            <li class="nav-item"><a class="nav-link" href="#math" aria-describedby="sec-math">數學</a></li>
+            <li class="nav-item"><a class="nav-link" href="#chemistry" aria-describedby="sec-chem">化學</a></li>
+          </ul>
+          <div class="d-flex gap-2 align-items-center">
+            <button id="themeToggle" class="btn btn-outline-secondary" type="button" aria-pressed="false" aria-label="切換深淺主題">
+              <i class="fa-solid fa-circle-half-stroke" aria-hidden="true"></i> 主題
+            </button>
+            <form class="" role="search" aria-label="站內搜尋">
+              <div class="input-group">
+                <label for="search" class="visually-hidden">搜尋動畫</label>
+                <input id="search" class="form-control" type="search" placeholder="搜尋主題" aria-label="搜尋主題">
+                <button class="btn btn-primary" type="submit" aria-label="送出搜尋"><i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i></button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </nav>
+  </header>
+  <main id="main" class="flex-grow-1 container py-4" tabindex="-1">
+    <h1 class="h3 mb-4">互動式教學動畫總覽</h1>
+    <p class="lead">選擇一個主題進入互動式模擬，探索概念、調整參數、觀察變化。</p>
+
+    <!-- Physics Section -->
+    <section id="physics" aria-labelledby="sec-physics" class="mb-5">
+      <div class="d-flex justify-content-between align-items-center mb-2">
+        <h2 id="sec-physics" class="h4 mb-0"><i class="fa-solid fa-bolt" aria-hidden="true"></i> 物理 Physics</h2>
+        <span class="badge text-bg-primary">基礎力學</span>
+      </div>
+      <div class="row g-3">
+        <div class="col-12 col-sm-6 col-lg-4">
+          <div class="card h-100" tabindex="0">
+            <div class="card-body">
+              <h3 class="h5 card-title">自由落體</h3>
+              <p class="card-text small">觀察物體在重力作用下的加速度與位移變化。</p>
+              <a href="physics/free-fall.html" class="btn btn-sm btn-primary" aria-label="開啟自由落體互動模擬">進入 <i class="fa-solid fa-arrow-right" aria-hidden="true"></i></a>
+            </div>
+          </div>
+        </div>
+        <div class="col-12 col-sm-6 col-lg-4">
+          <div class="card h-100" tabindex="0">
+            <div class="card-body">
+              <h3 class="h5 card-title">拋體運動</h3>
+              <p class="card-text small">調整初速度與角度，探索拋物線與射程。</p>
+              <a href="#" class="btn btn-sm btn-secondary disabled" aria-disabled="true">即將推出</a>
+            </div>
+          </div>
+        </div>
+        <div class="col-12 col-sm-6 col-lg-4">
+          <div class="card h-100" tabindex="0">
+            <div class="card-body">
+              <h3 class="h5 card-title">單擺運動</h3>
+              <p class="card-text small">研究擺長與週期的關係。</p>
+              <a href="#" class="btn btn-sm btn-secondary disabled" aria-disabled="true">即將推出</a>
+            </div>
+          </div>
+        </div>
+        <div class="col-12 col-sm-6 col-lg-4">
+          <div class="card h-100" tabindex="0">
+            <div class="card-body">
+              <h3 class="h5 card-title">疏密波（縱波）</h3>
+              <p class="card-text small">觀察縱波密部與疏部的傳播與質點振動。</p>
+              <a href="physics/hoz-waves.html" class="btn btn-sm btn-primary" aria-label="開啟疏密波互動模擬">進入 <i class="fa-solid fa-arrow-right" aria-hidden="true"></i></a>
+            </div>
+          </div>
+        </div>
+        <div class="col-12 col-sm-6 col-lg-4">
+          <div class="card h-100" tabindex="0">
+            <div class="card-body">
+              <h3 class="h5 card-title">凸透鏡成像</h3>
+              <p class="card-text small">拖曳物距觀察像距與放大率的變化，判斷實像與虛像性質。</p>
+              <a href="physics/convex-lens-imaging.html" class="btn btn-sm btn-primary" aria-label="進入凸透鏡成像互動模擬">進入 <i class="fa-solid fa-arrow-right" aria-hidden="true"></i></a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Math Section -->
+    <section id="math" aria-labelledby="sec-math" class="mb-5">
+      <div class="d-flex justify-content-between align-items-center mb-2">
+        <h2 id="sec-math" class="h4 mb-0"><i class="fa-solid fa-square-root-variable" aria-hidden="true"></i> 數學 Math</h2>
+        <span class="badge text-bg-success">函數與幾何</span>
+      </div>
+      <div class="row g-3">
+        <div class="col-12 col-sm-6 col-lg-4">
+          <div class="card h-100" tabindex="0">
+            <div class="card-body">
+              <h3 class="h5 card-title">畢氏定理</h3>
+              <p class="card-text small">視覺化展示直角三角形邊長關係。</p>
+              <a href="#" class="btn btn-sm btn-secondary disabled" aria-disabled="true">即將推出</a>
+            </div>
+          </div>
+        </div>
+        <div class="col-12 col-sm-6 col-lg-4">
+          <div class="card h-100" tabindex="0">
+            <div class="card-body">
+              <h3 class="h5 card-title">函數繪圖</h3>
+              <p class="card-text small">輸入函數表達式生成對應曲線。</p>
+              <a href="#" class="btn btn-sm btn-secondary disabled" aria-disabled="true">即將推出</a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Chemistry Section -->
+    <section id="chemistry" aria-labelledby="sec-chem" class="mb-5">
+      <div class="d-flex justify-content-between align-items-center mb-2">
+        <h2 id="sec-chem" class="h4 mb-0"><i class="fa-solid fa-flask" aria-hidden="true"></i> 化學 Chemistry</h2>
+        <span class="badge text-bg-warning">元素與結構</span>
+      </div>
+      <div class="row g-3">
+        <div class="col-12 col-sm-6 col-lg-4">
+          <div class="card h-100" tabindex="0">
+            <div class="card-body">
+              <h3 class="h5 card-title">週期表互動</h3>
+              <p class="card-text small">探索元素性質與分類。</p>
+              <a href="#" class="btn btn-sm btn-secondary disabled" aria-disabled="true">即將推出</a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="mb-4" aria-labelledby="sec-accessibility">
+      <h2 id="sec-accessibility" class="h5">無障礙與操作說明</h2>
+      <ul class="small mb-2">
+        <li>使用 Tab 操作導覽與按鈕，Enter 觸發。</li>
+        <li>主題切換：點擊「主題」按鈕或使用鍵盤焦點後 Enter。</li>
+        <li>擁有 skip link，可快速跳至主內容。</li>
+      </ul>
+    </section>
+  </main>
+  <footer class="mt-auto py-3 bg-light border-top" role="contentinfo">
+    <div class="container small d-flex flex-column flex-sm-row justify-content-between gap-2">
+      <div>&copy; 2025 國中數理互動學習站</div>
+      <div class="d-flex gap-3">
+        <a class="text-decoration-none" href="#" aria-label="隱私政策">隱私</a>
+        <a class="text-decoration-none" href="#" aria-label="使用條款">條款</a>
+      </div>
+    </div>
+  </footer>
+  <!-- Bootstrap JS Bundle -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    // 主題切換 (light/dark) 符合 prefers-reduced-motion 不做動畫過渡
+    const toggleBtn = document.getElementById('themeToggle');
+    const root = document.documentElement;
+    function setTheme(theme){
+      document.documentElement.setAttribute('data-bs-theme', theme);
+      localStorage.setItem('theme', theme);
+      toggleBtn.setAttribute('aria-pressed', theme === 'dark');
+    }
+    const saved = localStorage.getItem('theme');
+    if(saved){setTheme(saved);} else if(window.matchMedia('(prefers-color-scheme: dark)').matches){setTheme('dark');}
+    toggleBtn.addEventListener('click', ()=> {
+      const current = document.documentElement.getAttribute('data-bs-theme') || 'light';
+      setTheme(current === 'light' ? 'dark' : 'light');
+    });
+  </script>
+</body>
+</html>

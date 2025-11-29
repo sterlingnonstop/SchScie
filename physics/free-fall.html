@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="zh-Hant" data-bs-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>自由落體模擬</title>
+  <meta name="description" content="自由落體加速度與位移互動模擬" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <style>
+    .skip-link {position:absolute;left:-1000px;top:0;background:#000;color:#fff;padding:.5rem 1rem;z-index:1000;}
+    .skip-link:focus {left:0;}
+    :focus-visible {outline:3px solid #ff9800;outline-offset:2px;}
+    canvas {background:#0d1117;display:block;max-width:100%;height:auto;border:1px solid #333;border-radius:4px;}
+    .live-region {min-height:1.5em;}
+  </style>
+</head>
+<body class="d-flex flex-column min-vh-100">
+  <a href="#main" class="skip-link">跳到主內容</a>
+  <header>
+    <nav class="navbar navbar-expand-lg bg-body-tertiary" aria-label="頁面導覽">
+      <div class="container-fluid">
+        <a class="navbar-brand" href="../index.html" aria-label="返回首頁"><i class="fa-solid fa-arrow-left" aria-hidden="true"></i> 首頁</a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navContent" aria-controls="navContent" aria-expanded="false" aria-label="切換導覽"><span class="navbar-toggler-icon"></span></button>
+        <div class="collapse navbar-collapse" id="navContent">
+          <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+            <li class="nav-item"><a class="nav-link" href="../index.html#physics">物理</a></li>
+            <li class="nav-item"><a class="nav-link" href="../index.html#math">數學</a></li>
+            <li class="nav-item"><a class="nav-link" href="../index.html#chemistry">化學</a></li>
+          </ul>
+          <button id="themeToggle" class="btn btn-outline-secondary" type="button" aria-pressed="false" aria-label="切換深淺主題"><i class="fa-solid fa-circle-half-stroke" aria-hidden="true"></i></button>
+        </div>
+      </div>
+    </nav>
+  </header>
+  <main id="main" class="container py-3" tabindex="-1">
+    <h1 class="h3 mb-3">自由落體模擬</h1>
+    <p class="mb-4">調整初始高度與重力加速度，觀察物體隨時間的高度、速度變化。忽略空氣阻力。</p>
+    <div class="row g-4">
+      <section class="col-12 col-lg-7" aria-labelledby="sec-visual">
+        <h2 id="sec-visual" class="h5">模擬視覺區</h2>
+        <div class="ratio ratio-9x16 mb-3" style="max-width:400px">
+          <canvas id="simCanvas" aria-label="自由落體動畫畫布" role="img"></canvas>
+        </div>
+        <div id="simStatus" class="live-region small" aria-live="polite" aria-atomic="true">狀態：尚未開始</div>
+      </section>
+      <aside class="col-12 col-lg-5" aria-labelledby="sec-controls">
+        <h2 id="sec-controls" class="h5">控制面板</h2>
+        <form id="controls" class="needs-validation" novalidate>
+          <fieldset class="mb-3">
+            <legend class="fs-6">參數設定</legend>
+            <div class="mb-3">
+              <label for="height" class="form-label">初始高度 h (公尺)</label>
+              <div class="d-flex gap-2 align-items-center">
+                <input type="range" id="height" class="form-range flex-grow-1" min="1" max="100" step="1" value="50" aria-valuemin="1" aria-valuemax="100" aria-valuenow="50" aria-label="調整初始高度">
+                <input type="number" id="heightNum" class="form-control form-control-sm" style="width:6rem" value="50" aria-label="初始高度輸入">
+              </div>
+            </div>
+            <div class="mb-3">
+              <label for="gravity" class="form-label">重力加速度 g (m/s²)</label>
+              <div class="d-flex gap-2 align-items-center">
+                <input type="range" id="gravity" class="form-range flex-grow-1" min="1" max="20" step="0.1" value="9.8" aria-valuemin="1" aria-valuemax="20" aria-valuenow="9.8" aria-label="調整重力加速度">
+                <input type="number" id="gravityNum" class="form-control form-control-sm" style="width:6rem" value="9.8" aria-label="重力加速度數值輸入">
+              </div>
+            </div>
+          </fieldset>
+          <div class="btn-group mb-3" role="group" aria-label="模擬控制">
+            <button type="button" id="btnStart" class="btn btn-primary" aria-pressed="false"><i class="fa-solid fa-play" aria-hidden="true"></i> 開始</button>
+            <button type="button" id="btnPause" class="btn btn-warning" disabled><i class="fa-solid fa-pause" aria-hidden="true"></i> 暫停</button>
+            <button type="button" id="btnReset" class="btn btn-outline-secondary"><i class="fa-solid fa-rotate-left" aria-hidden="true"></i> 重置</button>
+          </div>
+          <div class="form-check form-switch mb-3">
+            <input class="form-check-input" type="checkbox" role="switch" id="reduceMotion" aria-label="減少動畫切換">
+            <label class="form-check-label" for="reduceMotion">減少動畫</label>
+          </div>
+          <button type="button" class="btn btn-outline-info" data-bs-toggle="collapse" data-bs-target="#help" aria-expanded="false" aria-controls="help">
+            <i class="fa-solid fa-circle-question" aria-hidden="true"></i> 操作說明
+          </button>
+          <div id="help" class="collapse mt-2">
+            <div class="card card-body small">
+              <strong>快捷鍵：</strong>
+              <ul class="mb-2">
+                <li><kbd>Space</kbd>：開始/暫停</li>
+                <li><kbd>R</kbd>：重置</li>
+                <li><kbd>← / →</kbd>：調整高度</li>
+              </ul>
+              <p class="mb-0">可透過調整 g 與 h 觀察落下時間與速度。</p>
+            </div>
+          </div>
+        </form>
+        <div class="mt-3 small">
+          <strong>公式：</strong>
+          <div>位移：s = h - (1/2) g t²</div>
+          <div>速度：v = g t</div>
+          <div class="visually-hidden">位移等於初始高度減去二分之一重力加速度乘以時間平方，速度等於重力加速度乘以時間。</div>
+        </div>
+        <div class="mt-3 small" id="dataPanel">
+          <strong>即時資料：</strong>
+          <ul class="list-unstyled mb-0">
+            <li>時間 t：<span id="outTime">0.00</span> s</li>
+            <li>高度 y：<span id="outHeight">50.00</span> m</li>
+            <li>速度 v：<span id="outVelocity">0.00</span> m/s</li>
+          </ul>
+        </div>
+      </aside>
+    </div>
+  </main>
+  <footer class="mt-auto py-3 bg-light border-top small text-center" role="contentinfo">&copy; 2025 國中數理互動學習站</footer>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    // 主題切換
+    const toggleBtn = document.getElementById('themeToggle');
+    function setTheme(theme){
+      document.documentElement.setAttribute('data-bs-theme', theme);
+      localStorage.setItem('theme', theme);
+      toggleBtn.setAttribute('aria-pressed', theme === 'dark');
+    }
+    const saved = localStorage.getItem('theme');
+    if(saved){setTheme(saved);} else if(window.matchMedia('(prefers-color-scheme: dark)').matches){setTheme('dark');}
+    toggleBtn.addEventListener('click', () => {
+      const current = document.documentElement.getAttribute('data-bs-theme') || 'light';
+      setTheme(current === 'light' ? 'dark' : 'light');
+    });
+
+    // 參數同步
+    const height = document.getElementById('height');
+    const heightNum = document.getElementById('heightNum');
+    const gravity = document.getElementById('gravity');
+    const gravityNum = document.getElementById('gravityNum');
+    function syncRange(rangeEl, numEl){ numEl.value = rangeEl.value; rangeEl.setAttribute('aria-valuenow', rangeEl.value); }
+    function syncNumber(rangeEl, numEl){ rangeEl.value = numEl.value; rangeEl.setAttribute('aria-valuenow', rangeEl.value); }
+    height.addEventListener('input', ()=> syncRange(height, heightNum));
+    heightNum.addEventListener('input', ()=> syncNumber(height, heightNum));
+    gravity.addEventListener('input', ()=> syncRange(gravity, gravityNum));
+    gravityNum.addEventListener('input', ()=> syncNumber(gravity, gravityNum));
+
+    // 模擬邏輯
+    const canvas = document.getElementById('simCanvas');
+    const ctx = canvas.getContext('2d');
+    const statusRegion = document.getElementById('simStatus');
+    const btnStart = document.getElementById('btnStart');
+    const btnPause = document.getElementById('btnPause');
+    const btnReset = document.getElementById('btnReset');
+    const outTime = document.getElementById('outTime');
+    const outHeight = document.getElementById('outHeight');
+    const outVelocity = document.getElementById('outVelocity');
+    const reduceMotion = document.getElementById('reduceMotion');
+
+    let running = false;
+    let t = 0; // 時間
+    let lastTime = null;
+    let y = parseFloat(height.value); // 高度
+    let v = 0; // 速度
+
+    function reset(){
+      t = 0; lastTime = null; v = 0; y = parseFloat(height.value);
+      statusRegion.textContent = '狀態：已重置';
+      updateOutputs();
+      draw();
+      btnPause.disabled = true;
+      btnStart.setAttribute('aria-pressed','false');
+      btnStart.classList.remove('btn-success');
+    }
+
+    function updateOutputs(){
+      outTime.textContent = t.toFixed(2);
+      outHeight.textContent = y.toFixed(2);
+      outVelocity.textContent = v.toFixed(2);
+    }
+
+    function draw(){
+      canvas.width = 300; canvas.height = 500;
+      ctx.clearRect(0,0,canvas.width,canvas.height);
+      // 地面
+      ctx.fillStyle = '#444';
+      ctx.fillRect(0, canvas.height - 20, canvas.width, 20);
+      // 物體
+      const maxHeight = parseFloat(height.value);
+      const ratio = y / maxHeight;
+      const screenY = (canvas.height - 40) - ratio * (canvas.height - 60);
+      ctx.fillStyle = '#ff9800';
+      ctx.beginPath();
+      ctx.arc(canvas.width/2, screenY, 16, 0, Math.PI*2);
+      ctx.fill();
+      // 文字
+      ctx.fillStyle = '#fff';
+      ctx.font = '14px sans-serif';
+      ctx.fillText('高度: ' + y.toFixed(2) + ' m', 10, 20);
+      ctx.fillText('速度: ' + v.toFixed(2) + ' m/s', 10, 40);
+      ctx.fillText('時間: ' + t.toFixed(2) + ' s', 10, 60);
+    }
+
+    function step(timestamp){
+      if(!running){return;}
+      if(lastTime === null){lastTime = timestamp;}
+      const dt = (timestamp - lastTime)/1000; // 秒
+      lastTime = timestamp;
+      const g = parseFloat(gravity.value);
+      // 更新運動 (簡單物理公式)
+      v = g * t;
+      y = parseFloat(height.value) - 0.5 * g * t * t;
+      if(y <= 0){ y = 0; running = false; statusRegion.textContent = '狀態：已著地'; }
+      else { t += dt; }
+      updateOutputs();
+      draw();
+      if(running){
+        if(reduceMotion.checked){ setTimeout(()=> requestAnimationFrame(step), 200); }
+        else { requestAnimationFrame(step); }
+      }
+    }
+
+    btnStart.addEventListener('click', ()=> {
+      if(running){return;} // 已在運行
+      running = true; statusRegion.textContent = '狀態：運行中'; btnPause.disabled = false;
+      btnStart.setAttribute('aria-pressed','true'); btnStart.classList.add('btn-success');
+      requestAnimationFrame(step);
+    });
+    btnPause.addEventListener('click', ()=> {
+      running = false; statusRegion.textContent = '狀態：已暫停'; btnStart.setAttribute('aria-pressed','false'); btnStart.classList.remove('btn-success');
+    });
+    btnReset.addEventListener('click', reset);
+
+    document.addEventListener('keydown', (e) => {
+      if(e.code === 'Space'){e.preventDefault(); if(running){btnPause.click();} else {btnStart.click();}}
+      if(e.key === 'R'){btnReset.click();}
+      if(e.key === 'ArrowLeft'){height.stepDown();syncRange(height,heightNum); if(!running){y=parseFloat(height.value); draw();}}
+      if(e.key === 'ArrowRight'){height.stepUp();syncRange(height,heightNum); if(!running){y=parseFloat(height.value); draw();}}
+    });
+
+    reset();
+  </script>
+</body>
+</html>
