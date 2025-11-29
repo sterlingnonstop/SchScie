@@ -105,7 +105,7 @@
 
                         <button id="resetBtn" class="btn btn-primary w-100 mb-4" type="button">
                             <i class="fa-solid fa-rotate-right" aria-hidden="true"></i>
-                            重置右側溫度 (冷卻)
+                            重置系統溫度
                         </button>
 
                         <div class="mb-4">
@@ -217,11 +217,9 @@
             let particles = [];
             let rows = 6;
             let cols = 14;
-            let targetLeftTemp = 25;
             let time = 0; 
             
             const CONDUCTION_RATE = 0.08;
-            const SOURCE_HEATING_RATE = 0.15;
 
             function resizeCanvas() {
                 const container = canvas.parentElement;
@@ -229,7 +227,6 @@
                 canvas.height = container.clientHeight;
                 
                 if(canvas.width === 0 || canvas.height === 0) {
-                    // If canvas has no size, wait and try again.
                     requestAnimationFrame(resizeCanvas);
                     return;
                 }
@@ -246,7 +243,7 @@
                     this.x = baseX;
                     this.y = baseY;
                     this.isLeft = isLeft;
-                    this.temp = isLeft ? targetLeftTemp : 25; 
+                    this.temp = 25; // Initialize all at 25C
                     this.phaseX = Math.random() * Math.PI * 2;
                     this.phaseY = Math.random() * Math.PI * 2;
                     this.freqScale = 0.8 + Math.random() * 0.4;
@@ -321,6 +318,7 @@
                     }
                     particles.push(rowParticles);
                 }
+                slider.value = 25; // Ensure slider is reset too
             }
 
             function simulateHeatTransfer() {
@@ -328,36 +326,41 @@
 
                 for (let r = 0; r < rows; r++) {
                     for (let c = 0; c < cols; c++) {
-                        const p = particles[r][c];
-                        if (p.isLeft) {
-                            let diff = targetLeftTemp - p.temp;
-                            nextTemps[r][c] = p.temp + diff * SOURCE_HEATING_RATE;
-                        } else {
-                            let neighborSum = 0;
-                            let count = 0;
-                            if (r > 0) { neighborSum += particles[r-1][c].temp; count++; }
-                            if (r < rows - 1) { neighborSum += particles[r+1][c].temp; count++; }
-                            if (c < cols - 1) { neighborSum += particles[r][c+1].temp; count++; }
-                            if (c > 0) { neighborSum += particles[r][c-1].temp; count++; }
-                            
-                            if (count > 0) {
-                                let diff = (neighborSum / count) - p.temp;
-                                nextTemps[r][c] = p.temp + diff * CONDUCTION_RATE;
-                            }
+                        // All particles follow the same diffusion logic
+                        let neighborSum = 0;
+                        let count = 0;
+                        if (r > 0) { neighborSum += particles[r-1][c].temp; count++; }
+                        if (r < rows - 1) { neighborSum += particles[r+1][c].temp; count++; }
+                        if (c < cols - 1) { neighborSum += particles[r][c+1].temp; count++; }
+                        if (c > 0) { neighborSum += particles[r][c-1].temp; count++; }
+                        
+                        if (count > 0) {
+                            let diff = (neighborSum / count) - particles[r][c].temp;
+                            nextTemps[r][c] = particles[r][c].temp + diff * CONDUCTION_RATE;
                         }
                     }
                 }
 
                 let rightTotalTemp = 0;
                 let rightCount = 0;
+                let leftTotalTemp = 0;
+                let leftCount = 0;
+
                 for (let r = 0; r < rows; r++) {
                     for (let c = 0; c < cols; c++) {
                         particles[r][c].temp = nextTemps[r][c];
-                        if (!particles[r][c].isLeft) {
+                        if (particles[r][c].isLeft) {
+                            leftTotalTemp += particles[r][c].temp;
+                            leftCount++;
+                        } else {
                             rightTotalTemp += particles[r][c].temp;
                             rightCount++;
                         }
                     }
+                }
+
+                if (leftCount > 0) {
+                    leftTempDisplay.textContent = Math.round(leftTotalTemp / leftCount);
                 }
                 if (rightCount > 0) {
                     rightTempDisplay.textContent = Math.round(rightTotalTemp / rightCount);
@@ -397,20 +400,28 @@
             }
 
             slider.addEventListener('input', (e) => {
-                targetLeftTemp = parseInt(e.target.value);
-                leftTempDisplay.textContent = targetLeftTemp;
+                const newTemp = parseInt(e.target.value);
+                for (const p of particles.flat()) {
+                    if (p.isLeft) {
+                        p.temp = newTemp;
+                    }
+                }
+                leftTempDisplay.textContent = newTemp;
                 if (window.liveRegion) {
-                    window.liveRegion(`左側溫度設為 ${targetLeftTemp} 度`);
+                    window.liveRegion(`左側溫度設為 ${newTemp} 度`);
                 }
             });
 
             resetBtn.addEventListener('click', () => {
-                for (let p of particles.flat()) {
-                    if (!p.isLeft) p.temp = 25;
+                for (const p of particles.flat()) {
+                    p.temp = 25;
                 }
+                leftTempDisplay.textContent = 25;
                 rightTempDisplay.textContent = 25;
+                slider.value = 25;
+                
                 if (window.liveRegion) {
-                    window.liveRegion('已重置右側溫度為 25 度');
+                    window.liveRegion('已重置系統溫度為 25 度');
                 }
             });
             
