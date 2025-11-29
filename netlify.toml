@@ -1,0 +1,9 @@
+[build]
+  publish = "public"
+  command = ""
+
+[dev]
+  publish = "public"
+  port = 8888
+
+# 可在需要時加入 redirects 或 headers 設定

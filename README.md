@@ -10,32 +10,41 @@
 - **JSON 資料驅動**：動畫資料與頁面分離，易於維護
 - **動態篩選**：依科目、年級快速找到需要的動畫
 
-## 📁 目錄結構
+## 📁 目錄結構（最新架構：部署隔離）
+
+本專案根目錄僅保留文件與部署設定，所有可公開之前端資源集中於 `public/`。Netlify `publish = "public"`。
 
 ```
 SchScie/
-├── index.html              # 首頁（動態渲染）
-├── data/
-│   └── animations.json     # 動畫資料庫（★核心資料）
-├── physics/                # 物理動畫
-│   ├── free-fall.html
-│   ├── kinetic-theory-gas.html
-│   └── ...
-├── math/                   # 數學動畫
-├── chemistry/              # 化學動畫
-└── PROJECT_PLAN.md         # 完整規劃文件
+├── README.md                # 專案簡介（不部署）
+├── PROJECT_PLAN.md          # 詳細規劃（不部署）
+├── netlify.toml             # 部署設定（publish=public）
+└── public/                  # 唯一部署根
+  ├── index.html           # 首頁（JSON 資料驅動 + 模組化導航）
+  ├── assets/              # 共用資源
+  │   ├── css/             # common.css / accessibility.css
+  │   ├── js/              # theme.js / navigation.js / a11y.js / ui-helpers.js
+  │   └── templates/       # navbar.html / footer.html
+  ├── data/                # 單一資料來源
+  │   └── animations.json  # 動畫 metadata（新增/修改唯一位置）
+  ├── physics/             # 物理動畫頁面
+  ├── chemistry/           # 化學（預留）
+  └── math/                # 數學（預留）
 ```
+
+> 舊版根層 `index.html`、`physics/`、`math/`、`chemistry/`、`data/` 已清理；請勿在根目錄新增 .html 檔案。
 
 ## 🚀 使用方式
 
 ### 本地預覽
 ```bash
-# 方法 1: 直接開啟
-open index.html
+# 直接開啟（建議）
+open public/index.html
 
-# 方法 2: 使用 Python 簡易伺服器
+# 或啟動簡易伺服器於 public 目錄
+cd public
 python3 -m http.server 8000
-# 然後開啟 http://localhost:8000
+# 瀏覽 http://localhost:8000
 ```
 
 ### 新增動畫的步驟
@@ -44,10 +53,10 @@ python3 -m http.server 8000
 在 Gemini 或其他工具生成動畫後，存入對應資料夾：
 ```bash
 # 例如新增一個波的干涉動畫
-physics/wave-interference.html
+public/physics/wave-interference.html
 ```
 
-#### 2. 編輯 `data/animations.json`
+#### 2. 編輯 `public/data/animations.json`
 在 `animations` 陣列中新增項目：
 
 ```json
@@ -76,10 +85,10 @@ physics/wave-interference.html
 #### 4. 驗證並測試
 ```bash
 # 驗證 JSON 格式
-python3 -m json.tool data/animations.json
+python3 -m json.tool public/data/animations.json
 
 # 重新載入首頁測試
-open index.html
+open public/index.html
 ```
 
 ## 📋 JSON 欄位說明
@@ -146,8 +155,8 @@ open index.html
 ## 🐛 疑難排解
 
 ### 頁面顯示「載入失敗」
-1. 檢查 `data/animations.json` 是否存在
-2. 使用 `python3 -m json.tool data/animations.json` 驗證 JSON 格式
+1. 檢查 `public/data/animations.json` 是否存在
+2. 使用 `python3 -m json.tool public/data/animations.json` 驗證 JSON 格式
 3. 開啟瀏覽器開發者工具查看 Console 錯誤訊息
 
 ### 篩選功能失效
@@ -182,4 +191,4 @@ open index.html
 ---
 
 **最後更新**: 2025年11月29日  
-**版本**: 2.0.0 (JSON 資料驅動架構)
+**版本**: 2.1.0 (public/ 部署隔離與文件同步)

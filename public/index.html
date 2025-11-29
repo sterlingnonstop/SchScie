@@ -118,286 +118,118 @@
   
   <!-- 原有的動畫載入邏輯 -->
   <script>
-    // ==================== JSON 資料驅動渲染引擎 ====================
     let animationsData = null;
-
-    // 載入 JSON 並初始化
     async function loadAnimations() {
       try {
         const response = await fetch('data/animations.json');
-        
-        if (!response.ok) {
-          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-        }
-        
+        if (!response.ok) { throw new Error(`HTTP ${response.status}: ${response.statusText}`); }
         animationsData = await response.json();
-        
-        // 驗證資料
         validateData(animationsData);
-        
-        // 渲染內容
         renderSubjectSections(animationsData.subjects);
         renderAnimationCards(animationsData.animations);
-        
-        // 初始化篩選
         initializeFilters(animationsData);
-        
-        console.log(`✅ 載入完成：共 ${animationsData.animations.length} 個動畫`);
-        
-      } catch (error) {
-        console.error('載入動畫資料失敗:', error);
-        showErrorState(error.message);
-      }
+      } catch (error) { console.error('載入動畫資料失敗:', error); showErrorState(error.message); }
     }
-
-    // 資料驗證
     function validateData(data) {
-      if (!data.animations || !Array.isArray(data.animations)) {
-        throw new Error('資料格式錯誤：缺少 animations 陣列');
-      }
-      if (!data.subjects || !Array.isArray(data.subjects)) {
-        throw new Error('資料格式錯誤：缺少 subjects 陣列');
-      }
-      
+      if (!data.animations || !Array.isArray(data.animations)) { throw new Error('資料格式錯誤：缺少 animations 陣列'); }
+      if (!data.subjects || !Array.isArray(data.subjects)) { throw new Error('資料格式錯誤：缺少 subjects 陣列'); }
       data.animations.forEach((anim, index) => {
         const required = ['id', 'title', 'subject', 'grade', 'description', 'url', 'status'];
-        required.forEach(field => {
-          if (!anim[field]) {
-            throw new Error(`動畫 #${index} (${anim.id || '未知'}) 缺少必要欄位: ${field}`);
-          }
-        });
+        required.forEach(field => { if (!anim[field]) { throw new Error(`動畫 #${index} (${anim.id || '未知'}) 缺少必要欄位: ${field}`); } });
       });
     }
-
-    // 渲染科目區段
     function renderSubjectSections(subjects) {
       const container = document.getElementById('mainContent');
-      container.innerHTML = ''; // 清空載入畫面
-      
+      container.innerHTML = '';
       subjects.forEach(subject => {
         const section = document.createElement('section');
-        section.id = subject.id;
-        section.className = 'mb-5';
-        section.setAttribute('aria-labelledby', `sec-${subject.id}`);
-        
+        section.id = subject.id; section.className = 'mb-5'; section.setAttribute('aria-labelledby', `sec-${subject.id}`);
         section.innerHTML = `
           <div class="d-flex justify-content-between align-items-center mb-2">
             <h2 id="sec-${subject.id}" class="h4 mb-0">
-              <i class="${subject.icon}" aria-hidden="true"></i> 
-              ${subject.name}
+              <i class="${subject.icon}" aria-hidden="true"></i> ${subject.name}
             </h2>
             <span class="badge text-bg-${subject.color}">${subject.badge}</span>
           </div>
           <div class="row g-3" data-subject-container="${subject.id}"></div>
         `;
-        
         container.appendChild(section);
       });
     }
-
-    // 渲染動畫卡片
     function renderAnimationCards(animations) {
-      // 依科目分組
-      const grouped = animations.reduce((acc, anim) => {
-        if (!acc[anim.subject]) acc[anim.subject] = [];
-        acc[anim.subject].push(anim);
-        return acc;
-      }, {});
-      
-      // 渲染每個科目的卡片
+      const grouped = animations.reduce((acc, anim) => { if (!acc[anim.subject]) acc[anim.subject] = []; acc[anim.subject].push(anim); return acc; }, {});
       Object.entries(grouped).forEach(([subject, cards]) => {
         const container = document.querySelector(`[data-subject-container="${subject}"]`);
-        if (!container) {
-          console.warn(`找不到科目容器: ${subject}`);
-          return;
-        }
-        
+        if (!container) { console.warn(`找不到科目容器: ${subject}`); return; }
         container.innerHTML = '';
-        
-        cards.forEach(anim => {
-          const cardElement = createCardElement(anim);
-          container.appendChild(cardElement);
-        });
+        cards.forEach(anim => { const cardElement = createCardElement(anim); container.appendChild(cardElement); });
       });
     }
-
-    // 建立單一卡片元素
     function createCardElement(anim) {
-      const col = document.createElement('div');
-      col.className = 'col-12 col-sm-6 col-lg-4';
-      
-      // 根據 status 決定按鈕
+      const col = document.createElement('div'); col.className = 'col-12 col-sm-6 col-lg-4';
       let buttonHTML = '';
       if (anim.status === 'active') {
-        buttonHTML = `
-          <a href="${anim.url}" class="btn btn-sm btn-primary" 
-             aria-label="進入${anim.title}互動模擬">
-            進入 <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
-          </a>
-        `;
+        buttonHTML = `<a href="${anim.url}" class="btn btn-sm btn-primary" aria-label="進入${anim.title}互動模擬">進入 <i class="fa-solid fa-arrow-right" aria-hidden="true"></i></a>`;
       } else if (anim.status === 'coming-soon') {
-        buttonHTML = `
-          <button class="btn btn-sm btn-secondary" disabled aria-disabled="true">
-            即將推出
-          </button>
-        `;
+        buttonHTML = `<button class="btn btn-sm btn-secondary" disabled aria-disabled="true">即將推出</button>`;
       }
-      
       col.innerHTML = `
-        <div class="card h-100" tabindex="0" 
-             data-subject="${anim.subject}" 
-             data-grade="${anim.grade}"
-             data-chapter="${anim.chapter || ''}"
-             data-keywords="${anim.keywords.join(',')}"
-             data-animation-id="${anim.id}">
+        <div class="card h-100" tabindex="0" data-subject="${anim.subject}" data-grade="${anim.grade}" data-chapter="${anim.chapter || ''}" data-keywords="${anim.keywords.join(',')}" data-animation-id="${anim.id}">
           <div class="card-body">
-            <h3 class="h5 card-title">
-              ${anim.icon ? `<i class="${anim.icon}" aria-hidden="true"></i> ` : ''}
-              ${anim.title}
-              ${anim.featured ? '<span class="badge text-bg-danger ms-1">NEW</span>' : ''}
-            </h3>
+            <h3 class="h5 card-title">${anim.icon ? `<i class="${anim.icon}" aria-hidden="true"></i> ` : ''}${anim.title}${anim.featured ? '<span class="badge text-bg-danger ms-1">NEW</span>' : ''}</h3>
             <p class="card-text small">${anim.description}</p>
             ${buttonHTML}
           </div>
-        </div>
-      `;
-      
+        </div>`;
       return col;
     }
-
-    // 錯誤狀態顯示
     function showErrorState(message) {
       const mainContent = document.getElementById('mainContent');
-      mainContent.innerHTML = `
-        <div class="alert alert-danger" role="alert">
-          <h4 class="alert-heading">
-            <i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i>
-            載入失敗
-          </h4>
-          <p>無法載入動畫資料：${message}</p>
-          <hr>
-          <p class="mb-0">
-            <button class="btn btn-outline-danger" onclick="location.reload()">
-              <i class="fa-solid fa-rotate-right" aria-hidden="true"></i>
-              重新載入
-            </button>
-          </p>
-        </div>
-      `;
+      mainContent.innerHTML = `<div class="alert alert-danger" role="alert"><h4 class="alert-heading"><i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i> 載入失敗</h4><p>無法載入動畫資料：${message}</p><hr><p class="mb-0"><button class="btn btn-outline-danger" onclick="location.reload()"><i class="fa-solid fa-rotate-right" aria-hidden="true"></i> 重新載入</button></p></div>`;
     }
-
-    // ==================== 篩選系統整合 ====================
     function initializeFilters(data) {
       const filterSubject = document.getElementById('filterSubject');
       const filterGrade = document.getElementById('filterGrade');
       const resetBtn = document.getElementById('resetFilters');
       const resultBadge = document.getElementById('resultBadge');
-
-      // 執行篩選
       function applyFilters() {
         const selectedSubject = filterSubject.value;
         const selectedGrade = filterGrade.value;
         let visibleCount = 0;
-
         const allCards = document.querySelectorAll('[data-animation-id]');
-
         allCards.forEach(card => {
           const cardSubject = card.getAttribute('data-subject');
           const cardGrade = card.getAttribute('data-grade');
-          
           const subjectMatch = selectedSubject === 'all' || cardSubject === selectedSubject;
           const gradeMatch = selectedGrade === 'all' || cardGrade === selectedGrade;
-          
           const isVisible = subjectMatch && gradeMatch;
-          
-          const colElement = card.closest('.col-12');
-          if (colElement) {
-            colElement.style.display = isVisible ? '' : 'none';
-          }
-          
+          const colElement = card.closest('.col-12'); if (colElement) { colElement.style.display = isVisible ? '' : 'none'; }
           if (isVisible) visibleCount++;
         });
-
-        updateResultBadge(visibleCount, allCards.length);
-        updateEmptySections();
+        updateResultBadge(visibleCount, allCards.length); updateEmptySections();
       }
-
-      // 更新結果徽章
       function updateResultBadge(visible, total) {
-        if (visible === total) {
-          resultBadge.textContent = `顯示全部 ${total} 項`;
-          resultBadge.className = 'badge text-bg-info fs-6';
-        } else if (visible === 0) {
-          resultBadge.textContent = '無符合結果';
-          resultBadge.className = 'badge text-bg-warning fs-6';
-        } else {
-          resultBadge.textContent = `顯示 ${visible} / ${total} 項`;
-          resultBadge.className = 'badge text-bg-success fs-6';
-        }
+        if (visible === total) { resultBadge.textContent = `顯示全部 ${total} 項`; resultBadge.className = 'badge text-bg-info fs-6'; }
+        else if (visible === 0) { resultBadge.textContent = '無符合結果'; resultBadge.className = 'badge text-bg-warning fs-6'; }
+        else { resultBadge.textContent = `顯示 ${visible} / ${total} 項`; resultBadge.className = 'badge text-bg-success fs-6'; }
       }
-
-      // 更新空白區段提示
       function updateEmptySections() {
         const sections = document.querySelectorAll('section[id]');
-        
         sections.forEach(section => {
           const cards = section.querySelectorAll('[data-animation-id]');
           let hasVisible = false;
-          
-          cards.forEach(card => {
-            const colElement = card.closest('.col-12');
-            if (colElement && colElement.style.display !== 'none') {
-              hasVisible = true;
-            }
-          });
-
-          const oldEmptyMsg = section.querySelector('.empty-state-message');
-          if (oldEmptyMsg) oldEmptyMsg.remove();
-
+          cards.forEach(card => { const colElement = card.closest('.col-12'); if (colElement && colElement.style.display !== 'none') { hasVisible = true; } });
+          const oldEmptyMsg = section.querySelector('.empty-state-message'); if (oldEmptyMsg) oldEmptyMsg.remove();
           if (!hasVisible && cards.length > 0) {
-            const row = section.querySelector('.row');
-            if (row) {
-              const emptyMsg = document.createElement('div');
-              emptyMsg.className = 'col-12 empty-state-message';
-              emptyMsg.innerHTML = `
-                <div class="alert alert-secondary" role="alert">
-                  <i class="fa-solid fa-circle-info" aria-hidden="true"></i> 
-                  此區段無符合篩選條件的項目
-                </div>
-              `;
-              row.appendChild(emptyMsg);
-            }
+            const row = section.querySelector('.row'); if (row) { const emptyMsg = document.createElement('div'); emptyMsg.className = 'col-12 empty-state-message'; emptyMsg.innerHTML = `<div class="alert alert-secondary" role="alert"><i class="fa-solid fa-circle-info" aria-hidden="true"></i> 此區段無符合篩選條件的項目</div>`; row.appendChild(emptyMsg); }
           }
         });
       }
-
-      // 重置篩選
-      function resetFilters() {
-        filterSubject.value = 'all';
-        filterGrade.value = 'all';
-        applyFilters();
-        filterSubject.focus();
-      }
-
-      // 事件監聽
-      filterSubject.addEventListener('change', applyFilters);
-      filterGrade.addEventListener('change', applyFilters);
-      resetBtn.addEventListener('click', resetFilters);
-
-      // 鍵盤快捷鍵
-      document.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape' && 
-            (document.activeElement === filterSubject || 
-             document.activeElement === filterGrade)) {
-          resetFilters();
-        }
-      });
-
-      // 初始化執行一次
+      function resetFilters() { filterSubject.value = 'all'; filterGrade.value = 'all'; applyFilters(); filterSubject.focus(); }
+      filterSubject.addEventListener('change', applyFilters); filterGrade.addEventListener('change', applyFilters); resetBtn.addEventListener('click', resetFilters);
+      document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && (document.activeElement === filterSubject || document.activeElement === filterGrade)) { resetFilters(); } });
       applyFilters();
     }
-
-    // ==================== 頁面載入時執行 ====================
     document.addEventListener('DOMContentLoaded', loadAnimations);
   </script>
 </body>
