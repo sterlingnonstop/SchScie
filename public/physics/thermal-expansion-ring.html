@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>熱漲冷縮：環形膨脹原理模擬</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #1a1a1a;
+            color: #eee;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin: 0;
+            padding: 20px;
+            overflow: hidden;
+        }
+
+        h2 { margin-bottom: 10px; }
+        p { color: #aaa; margin-bottom: 20px; text-align: center; max-width: 600px;}
+
+        .controls {
+            background: #2a2a2a;
+            padding: 15px 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            margin-bottom: 20px;
+            border: 1px solid #444;
+        }
+
+        input[type=range] {
+            width: 250px;
+            cursor: pointer;
+        }
+
+        .labels {
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+            font-size: 0.9em;
+            color: #888;
+        }
+
+        canvas {
+            background: #000;
+            border-radius: 50%; /* 讓畫布看起來像個圓形視窗 */
+            box-shadow: inset 0 0 50px rgba(255,255,255,0.05), 0 0 20px rgba(0,0,0,0.8);
+            border: 2px solid #333;
+        }
+
+        .stats {
+            margin-top: 15px;
+            font-family: monospace;
+            font-size: 1.1em;
+        }
+
+        .highlight {
+            color: #ff9d00;
+            font-weight: bold;
+        }
+        
+        /* 輔助說明的樣式 */
+        .legend {
+            display: flex;
+            gap: 20px;
+            font-size: 0.85em;
+            margin-top: 10px;
+            color: #888;
+        }
+        .dot { width: 10px; height: 10px; display: inline-block; border-radius: 50%; margin-right: 5px; }
+        .dot-ref { border: 1px dashed #666; background: transparent; }
+        .dot-real { background: #4a90e2; }
+    </style>
+</head>
+<body>
+
+    <h2>熱漲冷縮：環形膨脹模擬</h2>
+    <p>拖動滑桿調整溫度，觀察粒子震動與「內圈半徑」的變化。<br>請注意：雖然粒子想往四面八方震動，但為了維持間距，整個環必須向外擴張。</p>
+
+    <div class="controls">
+        <div>
+            <div class="labels">
+                <span>❄️ 冷 (低溫)</span>
+                <span>🔥 熱 (高溫)</span>
+            </div>
+            <input type="range" id="tempSlider" min="0" max="100" value="0">
+        </div>
+        <div style="text-align: left;">
+            <div>目前溫度: <span id="tempDisplay" class="highlight">0°C</span></div>
+        </div>
+    </div>
+
+    <canvas id="simCanvas" width="500" height="500"></canvas>
+    
+    <div class="stats">
+        內圈半徑: <span id="innerRadiusDisplay">100.0</span> px 
+        (<span id="statusText" style="color:#0f0">基準狀態</span>)
+    </div>
+
+    <div class="legend">
+        <div><span class="dot dot-ref"></span>虛線圈：0°C 原始大小</div>
+        <div><span class="dot dot-real" style="background:linear-gradient(90deg, #4a90e2, #ff5e5e)"></span>粒子顏色：隨溫度變紅</div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('simCanvas');
+        const ctx = canvas.getContext('2d');
+        const slider = document.getElementById('tempSlider');
+        const tempDisplay = document.getElementById('tempDisplay');
+        const radiusDisplay = document.getElementById('innerRadiusDisplay');
+        const statusText = document.getElementById('statusText');
+
+        // 設定參數
+        const centerX = canvas.width / 2;
+        const centerY = canvas.height / 2;
+        
+        // 環的參數 (基準值)
+        const baseInnerRadius = 80;
+        const baseOuterRadius = 180;
+        const rings = 8; // 環的層數
+        const particlesPerRingBase = 20; // 最內層的粒子數
+
+        let particles = [];
+
+        // 初始化粒子
+        function initParticles() {
+            particles = [];
+            // 建立多層同心圓的粒子
+            for (let r = 0; r < rings; r++) {
+                // 當前層的半徑 (0~1 之間的比例)
+                const layerProgress = r / (rings - 1); 
+                const currentBaseRadius = baseInnerRadius + (baseOuterRadius - baseInnerRadius) * layerProgress;
+                
+                // 根據半徑決定這一圈有多少粒子 (外圈粒子比較多，維持密度均勻)
+                const count = Math.floor(particlesPerRingBase * (currentBaseRadius / baseInnerRadius));
+                
+                for (let i = 0; i < count; i++) {
+                    const angle = (Math.PI * 2 * i) / count;
+                    particles.push({
+                        baseR: currentBaseRadius,   // 基準半徑
+                        angle: angle,               // 基準角度
+                        r: currentBaseRadius,       // 當前半徑 (動態)
+                        x: 0,                       // 當前 X
+                        y: 0                        // 當前 Y
+                    });
+                }
+            }
+        }
+
+        // 繪製與物理計算循環
+        function draw() {
+            // 1. 獲取目前溫度參數
+            const temp = parseInt(slider.value); // 0 ~ 100
+            
+            // 物理參數對應
+            // 膨脹係數 (Expansion): 溫度越高，平衡位置越往外推
+            const expansionFactor = 1 + (temp * 0.003); 
+            
+            // 震動幅度 (Vibration): 溫度越高，抖動越大
+            const vibrationAmt = temp * 0.5;
+
+            // 更新介面數值
+            tempDisplay.textContent = temp + "°C";
+            const currentInnerR = (baseInnerRadius * expansionFactor).toFixed(1);
+            radiusDisplay.textContent = currentInnerR;
+            
+            if(temp === 0) {
+                statusText.textContent = "基準狀態";
+                statusText.style.color = "#4a90e2";
+            } else {
+                statusText.textContent = "膨脹中 (內孔變大)";
+                statusText.style.color = "#ff5e5e";
+            }
+
+            // 2. 清空畫布
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // 3. 繪製參考線 (原本大小的虛線)
+            ctx.beginPath();
+            ctx.strokeStyle = '#444';
+            ctx.setLineDash([5, 5]);
+            ctx.lineWidth = 1;
+            ctx.arc(centerX, centerY, baseInnerRadius, 0, Math.PI * 2); // 原始內圈
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, baseOuterRadius, 0, Math.PI * 2); // 原始外圈
+            ctx.stroke();
+            ctx.setLineDash([]); // 重置虛線
+
+            // 4. 計算並繪製所有粒子
+            // 根據溫度改變顏色 (藍 -> 紅)
+            const rCol = Math.min(255, 74 + temp * 1.8);
+            const gCol = Math.min(255, 144 - temp * 0.5);
+            const bCol = Math.min(255, 226 - temp * 1.5);
+            ctx.fillStyle = `rgb(${rCol}, ${gCol}, ${bCol})`;
+
+            particles.forEach(p => {
+                // --- 物理核心 ---
+                
+                // A. 熱膨脹效應：
+                // 每個粒子的「平衡位置」都遠離圓心
+                // 這就是為什麼內圈會變大的原因：最內層的粒子平衡點也往外移了
+                let currentBaseR = p.baseR * expansionFactor;
+
+                // B. 熱震動效應：
+                // 在平衡位置附近隨機抖動
+                let jitterX = (Math.random() - 0.5) * vibrationAmt;
+                let jitterY = (Math.random() - 0.5) * vibrationAmt;
+
+                // 計算最終位置
+                // x = (新半徑 * cos角度) + 隨機震動
+                p.x = centerX + Math.cos(p.angle) * currentBaseR + jitterX;
+                p.y = centerY + Math.sin(p.angle) * currentBaseR + jitterY;
+
+                // 繪製粒子
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, 3 + temp * 0.02, 0, Math.PI * 2); // 溫度高時粒子視覺上也稍微膨脹
+                ctx.fill();
+            });
+
+            // 5. 繪製當前的邊界圓 (視覺輔助，讓變大更明顯)
+            ctx.beginPath();
+            ctx.strokeStyle = `rgba(${rCol}, ${gCol}, ${bCol}, 0.5)`;
+            ctx.lineWidth = 2;
+            // 畫出目前的內圈邊界 (理論值)
+            ctx.arc(centerX, centerY, baseInnerRadius * expansionFactor, 0, Math.PI * 2);
+            ctx.stroke();
+
+            requestAnimationFrame(draw);
+        }
+
+        initParticles();
+        draw();
+
+    </script>
+</body>
+</html>
