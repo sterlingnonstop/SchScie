@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>國中理化 - 熱量與溫度模擬器</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body { font-family: 'Noto Sans TC', sans-serif; }
+        canvas { touch-action: none; }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 h-screen flex flex-col overflow-hidden">
+
+    <!-- Header -->
+    <header class="bg-blue-600 text-white p-4 shadow-md flex-none">
+        <h1 class="text-xl md:text-2xl font-bold flex items-center gap-2">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-flame"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.115.385-2.256 1-3.5"/></svg>
+            熱量計算模擬器 (H = M × s × ΔT)
+        </h1>
+        <p class="text-sm opacity-90 mt-1">模擬穩定熱源加熱水，觀察溫度變化與熱量的關係</p>
+    </header>
+
+    <!-- Main Content -->
+    <div class="flex-1 flex flex-col lg:flex-row gap-4 p-4 overflow-auto">
+        
+        <!-- Left Panel: Controls & Data -->
+        <div class="w-full lg:w-1/3 flex flex-col gap-4">
+            
+            <!-- Control Panel -->
+            <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200">
+                <h2 class="font-bold text-lg mb-4 text-slate-700 border-b pb-2">實驗參數設定</h2>
+                
+                <div class="space-y-4">
+                    <!-- Mass Control -->
+                    <div>
+                        <label class="flex justify-between text-sm font-medium mb-1">
+                            <span>水的質量 (M)</span>
+                            <span class="text-blue-600 font-bold"><span id="massVal">100</span> g</span>
+                        </label>
+                        <input type="range" id="massRange" min="50" max="500" step="10" value="100" 
+                            class="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-blue-600 disabled:opacity-50">
+                    </div>
+
+                    <!-- Heating Rate Control -->
+                    <div>
+                        <label class="flex justify-between text-sm font-medium mb-1">
+                            <span>熱源強度 (每秒供熱)</span>
+                            <span class="text-red-500 font-bold"><span id="powerVal">50</span> cal/s</span>
+                        </label>
+                        <input type="range" id="powerRange" min="10" max="200" step="10" value="50" 
+                            class="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-red-500 disabled:opacity-50">
+                    </div>
+
+                    <!-- Initial Temp Control -->
+                    <div>
+                        <label class="flex justify-between text-sm font-medium mb-1">
+                            <span>初始溫度</span>
+                            <span class="text-slate-600 font-bold"><span id="initTempVal">20</span> °C</span>
+                        </label>
+                        <input type="range" id="initTempRange" min="0" max="80" step="1" value="20" 
+                            class="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-slate-500 disabled:opacity-50">
+                    </div>
+                </div>
+
+                <!-- Buttons -->
+                <div class="flex gap-2 mt-6">
+                    <button id="startBtn" class="flex-1 bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg transition shadow flex justify-center items-center gap-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                        開始加熱
+                    </button>
+                    <button id="resetBtn" class="bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded-lg transition shadow">
+                        重置
+                    </button>
+                </div>
+            </div>
+
+            <!-- Real-time Formula Calculation -->
+            <div class="bg-amber-50 p-5 rounded-xl shadow-sm border border-amber-200 flex-1">
+                <h2 class="font-bold text-lg mb-3 text-amber-800 border-b border-amber-200 pb-2">即時數據計算</h2>
+                <div class="grid grid-cols-2 gap-4 text-sm">
+                    <div class="bg-white p-3 rounded border border-amber-100">
+                        <div class="text-gray-500 text-xs">加熱時間 (t)</div>
+                        <div class="text-xl font-mono font-bold text-slate-800"><span id="timerDisplay">0.0</span> s</div>
+                    </div>
+                    <div class="bg-white p-3 rounded border border-amber-100">
+                        <div class="text-gray-500 text-xs">目前溫度 (T)</div>
+                        <div class="text-xl font-mono font-bold text-red-600"><span id="tempDisplay">20.0</span> °C</div>
+                    </div>
+                    <div class="col-span-2 bg-white p-3 rounded border border-amber-100">
+                        <div class="text-gray-500 text-xs mb-1">公式驗證 (H = M × s × ΔT)</div>
+                        <div class="font-mono text-sm md:text-base leading-loose">
+                            <div>總熱量 H = <span id="calcHeat" class="font-bold text-red-600">0</span> cal</div>
+                            <div class="text-gray-400 text-xs border-t my-1"></div>
+                            <div><span id="calcMass">100</span>(g) × 1 × (<span id="calcFinalT" class="text-red-600">20.0</span> - <span id="calcInitT">20.0</span>)</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="mt-3 text-xs text-amber-700">
+                    * 假設無熱量散失，水的比熱 s = 1 cal/g·°C
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Panel: Visualization & Graph -->
+        <div class="w-full lg:w-2/3 flex flex-col gap-4">
+            
+            <!-- Visualization Canvas -->
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 flex-1 relative min-h-[300px] flex justify-center items-center bg-gradient-to-b from-slate-50 to-slate-100">
+                <canvas id="simCanvas" width="600" height="300" class="w-full h-full object-contain"></canvas>
+            </div>
+
+            <!-- Chart -->
+            <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 h-[250px] md:h-[300px]">
+                <canvas id="chartCanvas"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- Configuration & State ---
+        const state = {
+            mass: 100,
+            power: 50, // cal/sec
+            initTemp: 20,
+            currTemp: 20,
+            time: 0,
+            isRunning: false,
+            isBoiling: false,
+            lastFrameTime: 0,
+            bubbles: []
+        };
+
+        const config = {
+            waterSpecificHeat: 1, // cal/g·C
+            maxTemp: 100,
+            simulationSpeed: 1 // 1x real time (can be adjusted if needed)
+        };
+
+        // --- DOM Elements ---
+        const els = {
+            massRange: document.getElementById('massRange'),
+            massVal: document.getElementById('massVal'),
+            powerRange: document.getElementById('powerRange'),
+            powerVal: document.getElementById('powerVal'),
+            initTempRange: document.getElementById('initTempRange'),
+            initTempVal: document.getElementById('initTempVal'),
+            startBtn: document.getElementById('startBtn'),
+            resetBtn: document.getElementById('resetBtn'),
+            timerDisplay: document.getElementById('timerDisplay'),
+            tempDisplay: document.getElementById('tempDisplay'),
+            calcHeat: document.getElementById('calcHeat'),
+            calcMass: document.getElementById('calcMass'),
+            calcFinalT: document.getElementById('calcFinalT'),
+            calcInitT: document.getElementById('calcInitT'),
+            simCanvas: document.getElementById('simCanvas'),
+            chartCanvas: document.getElementById('chartCanvas'),
+        };
+
+        const ctx = els.simCanvas.getContext('2d');
+        
+        // --- Chart Setup ---
+        let heatChart;
+
+        function initChart() {
+            const ctxChart = els.chartCanvas.getContext('2d');
+            heatChart = new Chart(ctxChart, {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        label: '溫度 (°C)',
+                        data: [],
+                        borderColor: 'rgb(220, 38, 38)', // Red
+                        backgroundColor: 'rgba(220, 38, 38, 0.1)',
+                        borderWidth: 2,
+                        pointRadius: 1,
+                        fill: true,
+                        tension: 0 // straight lines
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    animation: false,
+                    scales: {
+                        x: {
+                            type: 'linear',
+                            title: { display: true, text: '加熱時間 (秒)' },
+                            min: 0,
+                            suggestedMax: 60
+                        },
+                        y: {
+                            title: { display: true, text: '溫度 (°C)' },
+                            min: 0,
+                            max: 110,
+                            ticks: { stepSize: 10 }
+                        }
+                    },
+                    plugins: {
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return `溫度: ${context.parsed.y.toFixed(1)} °C`;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // --- Simulation Logic ---
+
+        function updatePhysics(dt) {
+            if (!state.isRunning || state.isBoiling) return;
+
+            // Heat gained in this time step (cal) = Power (cal/s) * dt (s)
+            // H = M * s * dT  =>  dT = H / (M * s)
+            const heatGained = state.power * dt;
+            const tempChange = heatGained / (state.mass * config.waterSpecificHeat);
+
+            state.time += dt;
+            state.currTemp += tempChange;
+
+            if (state.currTemp >= config.maxTemp) {
+                state.currTemp = config.maxTemp;
+                state.isBoiling = true;
+                stopSimulation();
+                // Ensure chart updates with the final point
+                updateChart();
+            }
+
+            // Update chart every ~0.5 seconds or significant change to save performance
+            if (state.time % 0.5 < dt) {
+                updateChart();
+            }
+        }
+
+        function updateChart() {
+            heatChart.data.labels.push(parseFloat(state.time.toFixed(1)));
+            heatChart.data.datasets[0].data.push(state.currTemp);
+            
+            // Auto scroll x-axis
+            if (state.time > heatChart.options.scales.x.suggestedMax) {
+                heatChart.options.scales.x.suggestedMax = state.time + 10;
+            }
+            
+            heatChart.update();
+        }
+
+        function updateUI() {
+            els.massVal.textContent = state.mass;
+            els.powerVal.textContent = state.power;
+            els.initTempVal.textContent = state.initTemp;
+
+            els.timerDisplay.textContent = state.time.toFixed(1);
+            els.tempDisplay.textContent = state.currTemp.toFixed(1);
+
+            // Formula Calculation display
+            const totalHeat = state.power * state.time;
+            els.calcHeat.textContent = totalHeat.toFixed(0);
+            els.calcMass.textContent = state.mass;
+            els.calcInitT.textContent = state.initTemp.toFixed(1);
+            els.calcFinalT.textContent = state.currTemp.toFixed(1);
+
+            // Toggle controls
+            const controlsDisabled = state.isRunning || state.time > 0;
+            els.massRange.disabled = controlsDisabled;
+            els.initTempRange.disabled = controlsDisabled;
+            // Allow changing power during sim? Usually physics problems assume constant, 
+            // but let's lock it for simplicity of "Stable Heat Source".
+            els.powerRange.disabled = controlsDisabled;
+        }
+
+        // --- Visual Rendering (Canvas) ---
+        
+        function resizeCanvas() {
+            const parent = els.simCanvas.parentElement;
+            els.simCanvas.width = parent.clientWidth;
+            els.simCanvas.height = parent.clientHeight;
+        }
+
+        function drawBeaker(centerX, centerY) {
+            const width = 120;
+            const height = 160;
+            const rimHeight = 10;
+            
+            ctx.save();
+            ctx.translate(centerX, centerY);
+
+            // Calculate water height based on mass (50g - 500g map to roughly 20% - 90% full)
+            // Visual mapping only
+            const fillPct = 0.2 + (state.mass / 500) * 0.7; 
+            const waterHeight = height * fillPct;
+
+            // Draw Water
+            ctx.fillStyle = `rgba(50, 150, 255, 0.4)`;
+            if (state.currTemp > 80) ctx.fillStyle = `rgba(50, 150, 255, 0.6)`; // Darker when hot
+            
+            ctx.beginPath();
+            ctx.moveTo(-width/2 + 5, height); // Bottom Left (inset for rounded)
+            ctx.lineTo(width/2 - 5, height); // Bottom Right
+            ctx.lineTo(width/2, height - waterHeight); // Top Right Water
+            ctx.lineTo(-width/2, height - waterHeight); // Top Left Water
+            ctx.fill();
+
+            // Bubbles (if hot)
+            if (state.currTemp > 60 && state.isRunning) {
+                if (Math.random() > 0.8) {
+                    state.bubbles.push({
+                        x: (Math.random() - 0.5) * (width - 20),
+                        y: height - 10,
+                        r: Math.random() * 3 + 1,
+                        speed: 1 + Math.random() * 2
+                    });
+                }
+            }
+            
+            // Draw & Update Bubbles
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.9)';
+            for (let i = state.bubbles.length - 1; i >= 0; i--) {
+                const b = state.bubbles[i];
+                b.y -= b.speed;
+                // Boiling effect: more chaos
+                if (state.currTemp >= 99) {
+                    b.x += (Math.random() - 0.5) * 2;
+                }
+
+                ctx.beginPath();
+                ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.stroke();
+
+                // Remove if out of water
+                if (b.y < height - waterHeight) {
+                    state.bubbles.splice(i, 1);
+                }
+            }
+
+
+            // Draw Beaker Glass
+            ctx.strokeStyle = '#aaa';
+            ctx.lineWidth = 4;
+            ctx.lineJoin = 'round';
+            ctx.beginPath();
+            ctx.moveTo(-width/2, -20); // Top Left
+            ctx.lineTo(-width/2, height - 10);
+            ctx.quadraticCurveTo(-width/2, height, -width/2 + 10, height);
+            ctx.lineTo(width/2 - 10, height);
+            ctx.quadraticCurveTo(width/2, height, width/2, height - 10);
+            ctx.lineTo(width/2, -20); // Top Right
+            ctx.stroke();
+
+            // Rim
+            ctx.strokeStyle = '#ddd';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.ellipse(0, -20, width/2, 10, 0, 0, Math.PI * 2);
+            ctx.stroke();
+            
+            // Ticks
+            ctx.fillStyle = '#888';
+            ctx.font = '10px Arial';
+            ctx.textAlign = 'right';
+            for(let i=1; i<=4; i++) {
+                let yPos = height - (height/5)*i;
+                ctx.fillRect(width/2 - 10, yPos, 10, 2);
+                ctx.fillText((i*100) + 'ml', width/2 - 15, yPos + 4);
+            }
+
+            ctx.restore();
+        }
+
+        function drawHeater(centerX, centerY) {
+            const yPos = centerY + 170; // Below beaker
+            
+            ctx.save();
+            ctx.translate(centerX, yPos);
+
+            // Stand
+            ctx.fillStyle = '#555';
+            ctx.fillRect(-60, 0, 120, 10); // Plate
+            ctx.fillStyle = '#333';
+            ctx.fillRect(-50, 10, 10, 40); // Leg L
+            ctx.fillRect(40, 10, 10, 40); // Leg R
+
+            // Flame
+            if (state.isRunning && !state.isBoiling) {
+                // Scale flame by power
+                const scale = 0.5 + (state.power / 200) * 1.0; 
+                
+                // Flicker
+                const flickerW = Math.sin(Date.now() / 50) * 2;
+                const flickerH = Math.cos(Date.now() / 40) * 5;
+
+                ctx.fillStyle = 'rgba(255, 100, 0, 0.8)'; // Outer
+                ctx.beginPath();
+                ctx.moveTo(-15 * scale + flickerW, 0);
+                ctx.quadraticCurveTo(0, -60 * scale + flickerH, 15 * scale - flickerW, 0);
+                ctx.fill();
+
+                ctx.fillStyle = 'rgba(255, 255, 0, 0.9)'; // Inner
+                ctx.beginPath();
+                ctx.moveTo(-8 * scale + flickerW, 0);
+                ctx.quadraticCurveTo(0, -40 * scale + flickerH, 8 * scale - flickerW, 0);
+                ctx.fill();
+            }
+
+            ctx.restore();
+        }
+
+        function drawThermometer(centerX, centerY) {
+            const xPos = centerX + 50; // Inside right side of beaker
+            const yPos = centerY - 60; // Start from top
+            
+            ctx.save();
+            ctx.translate(xPos, yPos);
+
+            // Glass stem
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+            ctx.strokeStyle = '#999';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.roundRect(-4, 0, 8, 200, 4);
+            ctx.fill();
+            ctx.stroke();
+
+            // Bulb
+            ctx.fillStyle = 'red';
+            ctx.beginPath();
+            ctx.arc(0, 200, 8, 0, Math.PI*2);
+            ctx.fill();
+
+            // Mercury Line
+            // Map 0-100C to height 0-180px (inverted)
+            const height = (state.currTemp / 110) * 180;
+            ctx.fillRect(-2, 200 - height, 4, height);
+
+            ctx.restore();
+        }
+
+        function render() {
+            // Clear
+            ctx.clearRect(0, 0, els.simCanvas.width, els.simCanvas.height);
+            
+            const cx = els.simCanvas.width / 2;
+            const cy = els.simCanvas.height / 2 - 20;
+
+            drawBeaker(cx, cy);
+            drawHeater(cx, cy);
+            drawThermometer(cx - 30, cy - 50); // Offset thermometer slightly
+
+            requestAnimationFrame(render);
+        }
+
+
+        // --- Event Handlers & Control ---
+
+        function startSimulation() {
+            if (state.isRunning) return;
+            
+            if (state.isBoiling || (state.time > 0 && !state.isRunning)) {
+                // If it was paused or ended, don't reset, just resume? 
+                // For simplicity in this logic, we only support Start or Reset.
+                // But let's check if we are resuming from a pause state or fresh start.
+                // This app currently treats Stop as Reset-required or we could add Pause.
+                // Let's make "Start" become "Pause" if running.
+            }
+            
+            state.isRunning = true;
+            state.lastFrameTime = performance.now();
+            
+            els.startBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg> 暫停`;
+            els.startBtn.classList.replace('bg-green-600', 'bg-yellow-500');
+            els.startBtn.classList.replace('hover:bg-green-700', 'hover:bg-yellow-600');
+            
+            loop();
+        }
+
+        function pauseSimulation() {
+            state.isRunning = false;
+            els.startBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg> 繼續`;
+            els.startBtn.classList.replace('bg-yellow-500', 'bg-green-600');
+            els.startBtn.classList.replace('hover:bg-yellow-600', 'hover:bg-green-700');
+        }
+
+        function stopSimulation() {
+            state.isRunning = false;
+            els.startBtn.innerHTML = `已沸騰 / 結束`;
+            els.startBtn.disabled = true;
+            els.startBtn.classList.add('opacity-50', 'cursor-not-allowed');
+        }
+
+        function resetSimulation() {
+            state.isRunning = false;
+            state.isBoiling = false;
+            state.time = 0;
+            state.currTemp = state.initTemp;
+            state.bubbles = [];
+            
+            // Reset Chart
+            heatChart.data.labels = [];
+            heatChart.data.datasets[0].data = [];
+            heatChart.options.scales.x.suggestedMax = 60; // reset zoom
+            heatChart.update();
+
+            // Reset UI Buttons
+            els.startBtn.disabled = false;
+            els.startBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+            els.startBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg> 開始加熱`;
+            els.startBtn.classList.remove('bg-yellow-500', 'hover:bg-yellow-600');
+            els.startBtn.classList.add('bg-green-600', 'hover:bg-green-700');
+
+            updateUI();
+        }
+
+        function loop() {
+            if (!state.isRunning) return;
+            
+            const now = performance.now();
+            const dt = (now - state.lastFrameTime) / 1000; // seconds
+            state.lastFrameTime = now;
+
+            // Cap dt to prevent huge jumps if tab was inactive
+            const safeDt = Math.min(dt, 0.1); 
+
+            updatePhysics(safeDt * config.simulationSpeed);
+            updateUI();
+            
+            requestAnimationFrame(loop);
+        }
+
+        // --- Init Listeners ---
+
+        els.massRange.addEventListener('input', (e) => {
+            state.mass = parseInt(e.target.value);
+            updateUI();
+        });
+
+        els.powerRange.addEventListener('input', (e) => {
+            state.power = parseInt(e.target.value);
+            updateUI();
+        });
+
+        els.initTempRange.addEventListener('input', (e) => {
+            state.initTemp = parseInt(e.target.value);
+            state.currTemp = state.initTemp;
+            updateUI();
+        });
+
+        els.startBtn.addEventListener('click', () => {
+            if (state.isRunning) pauseSimulation();
+            else startSimulation();
+        });
+
+        els.resetBtn.addEventListener('click', resetSimulation);
+
+        window.addEventListener('resize', resizeCanvas);
+
+        // --- Bootstrap ---
+        initChart();
+        resizeCanvas();
+        updateUI();
+        render(); // Start animation loop (visual only)
+
+    </script>
+</body>
+</html>
