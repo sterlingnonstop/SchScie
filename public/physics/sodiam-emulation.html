@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>原子電子分層模擬比較</title>
+    <!-- 載入 Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* 定義電子軌道（殼層）的旋轉動畫，給予 3D 效果 */
+        @keyframes orbit {
+            from { transform: rotateX(70deg) rotateZ(0deg); }
+            to { transform: rotateX(70deg) rotateZ(360deg); }
+        }
+
+        /* 應用於每個電子軌道容器 */
+        .shell {
+            --container-base: 600; /* 基準尺寸微調 */
+            
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            border: 2px solid rgba(135, 206, 235, 0.4); /* 稍微降低透明度讓視覺更清爽 */
+            border-radius: 50%;
+            transform-style: preserve-3d;
+            
+            /* 動態尺寸計算 */
+            width: calc(var(--shell-diameter) / var(--container-base) * 100%);
+            height: calc(var(--shell-diameter) / var(--container-base) * 100%);
+            margin: calc(-1 * var(--shell-diameter) / var(--container-base) * 50%);
+            
+            transition: opacity 0.5s ease-in-out;
+        }
+        
+        /* 殼層定義 - 保持原樣但調整參數 */
+        #shell-1 { --shell-diameter: 100; --animation-duration: 10s; animation: orbit linear infinite var(--animation-duration); } 
+        #shell-2 { --shell-diameter: 200; --animation-duration: 15s; animation: orbit linear infinite var(--animation-duration) reverse; } 
+        #shell-3 { --shell-diameter: 300; --animation-duration: 20s; animation: orbit linear infinite var(--animation-duration); } 
+        #shell-4 { --shell-diameter: 400; --animation-duration: 25s; animation: orbit linear infinite var(--animation-duration) reverse; } 
+        #shell-5 { --shell-diameter: 500; --animation-duration: 30s; animation: orbit linear infinite var(--animation-duration); }
+        #shell-6 { --shell-diameter: 600; --animation-duration: 35s; animation: orbit linear infinite var(--animation-duration) reverse; }
+
+        /* 電子與價電子 */
+        .electron {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background-color: #60A5FA;
+            box-shadow: 0 0 5px #60A5FA; /* 增加發光效果 */
+        }
+        .valence-electron {
+            background-color: #F87171;
+            box-shadow: 0 0 5px #F87171;
+        }
+
+        /* 原子核 */
+        .nucleus {
+            width: 44px; 
+            height: 44px;
+            border-radius: 50%;
+            background: radial-gradient(circle at 14px 14px, #FBBF24, #D97706); 
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 800;
+            font-size: 13px; 
+            z-index: 10;
+            transition: all 0.5s ease-in-out;
+            border: 2px solid rgba(255,255,255,0.2);
+        }
+
+        .shell-hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+        
+        /* --- 響應式容器設計 --- */
+        #atom-container {
+            /* 手機版預設 */
+            width: min(90vw, 45vh, 400px);
+            height: min(90vw, 45vh, 400px);
+            
+            perspective: 1000px;
+            position: relative; 
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: width 0.3s ease, height 0.3s ease;
+        }
+
+        /* 電腦版 (寬度 > 1024px) */
+        @media (min-width: 1024px) {
+            #atom-container {
+                width: min(45vw, 75vh, 650px);
+                height: min(45vw, 75vh, 650px);
+            }
+        }
+    </style>
+</head>
+<body class="bg-slate-900 min-h-screen w-full flex flex-col items-center justify-center font-mono text-slate-100 p-4 lg:p-8 overflow-x-hidden">
+
+    <!-- 全域大標題 -->
+    <header class="w-full text-center mb-8 lg:mb-12">
+        <h1 class="text-3xl lg:text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-purple-400 to-blue-400 tracking-wide drop-shadow-lg">
+            原子電子分層模擬實驗室
+        </h1>
+        <p class="text-slate-400 mt-2 text-sm lg:text-base">
+            透過 3D 可視化模型，探索週期表元素的電子排列奧秘
+        </p>
+    </header>
+
+    <!-- 主佈局容器：手機垂直排列，電腦左右並排 -->
+    <div class="flex flex-col lg:flex-row items-center justify-center w-full max-w-7xl gap-6 lg:gap-16">
+        
+        <!-- 左側面板：控制與資訊 -->
+        <div class="flex flex-col items-center lg:items-start w-full lg:w-1/3 space-y-6 z-20 order-2 lg:order-1">
+            
+            <!-- 標題區塊 -->
+            <div class="text-center lg:text-left space-y-2">
+                <h2 id="atom-title" class="text-2xl lg:text-4xl font-black text-yellow-400 tracking-tight"></h2>
+                <p id="atom-summary" class="text-slate-400 text-sm lg:text-base"></p>
+            </div>
+
+            <!-- 按鈕群組 -->
+            <div class="flex flex-wrap justify-center lg:justify-start gap-2 w-full">
+                <button id="btn-H" class="px-4 py-2 rounded-lg font-bold text-sm transition-all shadow-lg border border-slate-700">H</button>
+                <button id="btn-C" class="px-4 py-2 rounded-lg font-bold text-sm transition-all shadow-lg border border-slate-700">C</button>
+                <button id="btn-O" class="px-4 py-2 rounded-lg font-bold text-sm transition-all shadow-lg border border-slate-700">O</button>
+                <button id="btn-Na" class="px-4 py-2 rounded-lg font-bold text-sm transition-all shadow-lg border border-slate-700">Na</button>
+                <button id="btn-Au" class="px-4 py-2 rounded-lg font-bold text-sm transition-all shadow-lg border border-slate-700">Au</button>
+            </div>
+
+            <!-- 資訊面板 (半透明卡片風格) -->
+            <div id="electron-info" class="w-full bg-slate-800/60 backdrop-blur-sm rounded-xl p-5 border border-slate-700 shadow-xl transition-all">
+                <p class="text-lg font-bold mb-3 border-b border-slate-600 pb-2 text-slate-200">電子分佈</p>
+                <!-- JS 填充內容 -->
+            </div>
+
+        </div>
+
+        <!-- 右側面板：原子模擬 -->
+        <div class="flex flex-col items-center justify-center w-full lg:w-2/3 order-1 lg:order-2 min-h-[300px] lg:min-h-[600px]">
+            <div id="atom-container">
+                <!-- 原子核 -->
+                <div id="nucleus" class="nucleus"></div>
+                <!-- 電子層 -->
+                <div id="shell-1" class="shell"></div>
+                <div id="shell-2" class="shell"></div>
+                <div id="shell-3" class="shell"></div>
+                <div id="shell-4" class="shell"></div>
+                <div id="shell-5" class="shell"></div>
+                <div id="shell-6" class="shell"></div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        // ----------------------------------------------------
+        // JavaScript 邏輯
+        // ----------------------------------------------------
+
+        const ATOM_DATA = {
+            'H': { name: '氫原子', symbol: 'H', protons: 1, period: 1, group: 1, shells: [{ id: 'shell-1', count: 1, isValence: true }] },
+            'C': { name: '碳原子', symbol: 'C', protons: 6, period: 2, group: 14, shells: [{ id: 'shell-1', count: 2, isValence: false }, { id: 'shell-2', count: 4, isValence: true }] },
+            'O': { name: '氧原子', symbol: 'O', protons: 8, period: 2, group: 16, shells: [{ id: 'shell-1', count: 2, isValence: false }, { id: 'shell-2', count: 6, isValence: true }] },
+            'Na': { name: '鈉原子', symbol: 'Na', protons: 11, period: 3, group: 1, shells: [{ id: 'shell-1', count: 2, isValence: false }, { id: 'shell-2', count: 8, isValence: false }, { id: 'shell-3', count: 1, isValence: true }] },
+            'Au': { name: '金原子', symbol: 'Au', protons: 79, period: 6, group: 11, shells: [
+                { id: 'shell-1', count: 2, isValence: false }, { id: 'shell-2', count: 8, isValence: false },
+                { id: 'shell-3', count: 18, isValence: false }, { id: 'shell-4', count: 32, isValence: false },
+                { id: 'shell-5', count: 18, isValence: false }, { id: 'shell-6', count: 1, isValence: true }
+            ]}
+        };
+
+        const elements = {
+            title: document.getElementById('atom-title'),
+            summary: document.getElementById('atom-summary'),
+            nucleus: document.getElementById('nucleus'),
+            info: document.getElementById('electron-info'),
+            shells: Array.from({length: 6}, (_, i) => document.getElementById(`shell-${i+1}`)),
+            buttons: ['H', 'C', 'O', 'Na', 'Au'].reduce((acc, el) => ({...acc, [el]: document.getElementById(`btn-${el}`)}), {})
+        };
+        
+        function placeElectrons(shellElement, count, isValence) {
+            while (shellElement.firstChild) shellElement.removeChild(shellElement.firstChild);
+            
+            const radius = shellElement.clientWidth / 2;
+            const animationDuration = parseFloat(getComputedStyle(shellElement).animationDuration) || 10;
+
+            for (let i = 0; i < count; i++) {
+                const angle = (i * (360 / count)) * (Math.PI / 180); 
+                const xOffset = radius * Math.cos(angle);
+                const yOffset = radius * Math.sin(angle);
+                
+                const electron = document.createElement('div');
+                electron.className = `electron ${isValence ? 'valence-electron' : ''}`;
+                electron.style.left = `calc(50% + ${xOffset}px - 5px)`;
+                electron.style.top = `calc(50% + ${yOffset}px - 5px)`;
+                electron.style.animationDelay = `-${i * (animationDuration / count)}s`;
+                
+                shellElement.appendChild(electron);
+            }
+            shellElement.classList.remove('shell-hidden');
+        }
+
+        function renderAtom(atomType) {
+            const data = ATOM_DATA[atomType];
+            if (!data) return;
+
+            elements.title.textContent = `${data.name} (${data.symbol})`;
+            elements.summary.textContent = `週期 ${data.period} · ${data.group} 族 · 質子數 ${data.protons}`;
+            
+            elements.nucleus.textContent = data.symbol;
+            const colors = { 'H': '#6EE7B7', 'C': '#EF4444', 'O': '#3B82F6', 'Na': '#FBBF24', 'Au': '#FFD700' };
+            const color = colors[atomType] || '#FBBF24';
+            elements.nucleus.style.background = `radial-gradient(circle at 30% 30%, ${color}, #333)`;
+            elements.nucleus.style.boxShadow = `0 0 15px ${color}80`;
+
+            let infoHTML = ``;
+            elements.shells.forEach((shellEl, index) => {
+                const shellData = data.shells.find(s => s.id === `shell-${index + 1}`);
+                if (shellData) {
+                    placeElectrons(shellEl, shellData.count, shellData.isValence);
+                    const colorClass = shellData.isValence ? 'text-red-400 font-bold' : 'text-blue-400';
+                    const layerName = ['K', 'L', 'M', 'N', 'O', 'P'][index];
+                    infoHTML += `<div class="flex justify-between py-1 border-b border-slate-700 last:border-0">
+                        <span class="text-slate-400">第 ${index + 1} 層 (${layerName})</span>
+                        <span class="${colorClass}">${shellData.count} e⁻ ${shellData.isValence ? '(價)' : ''}</span>
+                    </div>`;
+                } else {
+                    shellEl.classList.add('shell-hidden');
+                    while (shellEl.firstChild) shellEl.removeChild(shellEl.firstChild);
+                }
+            });
+
+            // --- 新增：特殊組態說明 ---
+            if (atomType === 'Au') {
+                infoHTML += `
+                <div class="mt-4 pt-3 border-t border-slate-600 bg-slate-900/30 rounded p-2">
+                    <p class="text-yellow-400 font-bold text-xs mb-1 flex items-center">
+                        <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                        特殊電子組態
+                    </p>
+                    <p class="text-xs text-slate-300 leading-relaxed">
+                        為了讓第 5 層的 d 軌域達到 <span class="text-white font-bold">全滿 (10顆)</span> 的穩定狀態，電子會從最外層 (6s) 移入一顆。
+                        <br>
+                        結果：最外層剩 <span class="text-red-400 font-bold">1</span> 顆電子。
+                        <br>
+                        <span class="font-mono text-[10px] text-yellow-200 mt-1 block">[Xe] 4f<sup>14</sup> 5d<sup>10</sup> 6s<sup>1</sup></span>
+                    </p>
+                </div>`;
+            }
+
+            elements.info.innerHTML = `<p class="text-lg font-bold mb-3 border-b border-slate-600 pb-2 text-slate-200">電子分佈</p>` + infoHTML;
+
+            Object.keys(elements.buttons).forEach(key => {
+                const btn = elements.buttons[key];
+                const isActive = atomType === key;
+                btn.className = `px-4 py-2 rounded-lg font-bold text-sm transition-all shadow-md border ${
+                    isActive 
+                    ? 'bg-yellow-500 text-slate-900 border-yellow-400 scale-105' 
+                    : 'bg-slate-800 text-slate-400 border-slate-700 hover:bg-slate-700 hover:text-white'
+                }`;
+            });
+        }
+        
+        // 監聽尺寸變化以重新計算電子位置
+        new ResizeObserver(() => {
+            const currentSymbol = elements.nucleus.textContent;
+            const currentKey = Object.keys(ATOM_DATA).find(k => ATOM_DATA[k].symbol === currentSymbol);
+            if (currentKey) renderAtom(currentKey);
+        }).observe(document.getElementById('atom-container'));
+
+        Object.keys(elements.buttons).forEach(key => {
+            elements.buttons[key].addEventListener('click', () => renderAtom(key));
+        });
+
+        window.onload = () => renderAtom('H');
+
+    </script>
+
+</body>
+</html>
