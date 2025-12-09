@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>水的熱對流模擬實驗</title>
+    <style>
+        :root {
+            --glass-border: #accbe1;
+            --water-bg: #eef4f8;
+            --text-main: #333;
+        }
+
+        body {
+            font-family: 'Noto Sans TC', "Microsoft JhengHei", sans-serif;
+            background-color: #f0f2f5;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            color: var(--text-main);
+        }
+
+        header {
+            background: #4a90e2;
+            color: white;
+            width: 100%;
+            padding: 1rem 0;
+            text-align: center;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        h1 { margin: 0; font-size: 1.5rem; }
+        .subtitle { font-size: 0.9rem; opacity: 0.9; margin-top: 5px; }
+
+        .container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            padding: 20px;
+            justify-content: center;
+            max-width: 1000px;
+            width: 100%;
+        }
+
+        .simulation-area {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            position: relative;
+        }
+
+        /* 燒杯樣式 */
+        .beaker-container {
+            position: relative;
+            padding: 10px;
+        }
+
+        canvas {
+            border-left: 4px solid var(--glass-border);
+            border-right: 4px solid var(--glass-border);
+            border-bottom: 4px solid var(--glass-border);
+            border-radius: 0 0 15px 15px;
+            background-color: var(--water-bg);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+            cursor: pointer;
+            touch-action: none;
+        }
+
+        /* 火源樣式 */
+        .burner {
+            width: 60px;
+            height: 30px;
+            margin-top: 5px;
+            position: relative;
+            transition: opacity 0.3s;
+            opacity: 0.2; /* 預設關閉 */
+        }
+        
+        .burner.active { opacity: 1; }
+
+        .flame {
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(ellipse at bottom, #ffdd00 0%, #ff5e00 60%, transparent 80%);
+            border-radius: 50% 50% 20% 20%;
+            filter: blur(2px);
+            animation: flicker 0.2s infinite alternate;
+        }
+
+        @keyframes flicker {
+            0% { transform: scale(1); opacity: 0.9; }
+            100% { transform: scale(1.1); opacity: 1; }
+        }
+
+        /* 控制面板 */
+        .controls {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            width: 300px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        label { font-weight: bold; font-size: 0.9rem; }
+
+        button {
+            padding: 10px;
+            border: none;
+            border-radius: 6px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: background 0.2s;
+            font-weight: bold;
+        }
+
+        .btn-heat { background: #ff6b6b; color: white; }
+        .btn-heat:hover { background: #ff5252; }
+        .btn-heat.active { background: #d32f2f; box-shadow: inset 0 2px 4px rgba(0,0,0,0.2); }
+
+        .btn-reset { background: #4a90e2; color: white; }
+        .btn-reset:hover { background: #357abd; }
+
+        .info-panel {
+            margin-top: 10px;
+            font-size: 0.9rem;
+            line-height: 1.5;
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 6px;
+            border-left: 4px solid #ffca28;
+        }
+
+        .legend {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-top: 10px;
+            font-size: 0.8rem;
+        }
+        
+        .gradient-bar {
+            flex-grow: 1;
+            height: 10px;
+            margin: 0 10px;
+            background: linear-gradient(to right, blue, cyan, yellow, red);
+            border-radius: 5px;
+        }
+
+        /* 浮動標籤 */
+        .floating-label {
+            position: absolute;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            pointer-events: none;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            transition: top 0.5s ease, opacity 0.3s;
+        }
+
+    </style>
+</head>
+<body>
+
+<header>
+    <h1>水的熱對流模擬</h1>
+    <div class="subtitle">國中理化：熱與溫度 - 熱傳播</div>
+</header>
+
+<div class="container">
+    <div class="simulation-area">
+        <div class="beaker-container">
+            <canvas id="simCanvas" width="300" height="400"></canvas>
+            
+            <!-- 動態標籤 -->
+            <div id="hotLabel" class="floating-label" style="display:none; color: #d32f2f;">熱水: 密度小 ⬆</div>
+            <div id="coldLabel" class="floating-label" style="display:none; color: #1976d2;">冷水: 密度大 ⬇</div>
+        </div>
+        
+        <div class="burner" id="burner">
+            <div class="flame"></div>
+        </div>
+    </div>
+
+    <div class="controls">
+        <div class="control-group">
+            <label>實驗操作</label>
+            <button id="toggleHeatBtn" class="btn-heat">開啟加熱 (Heating)</button>
+            <button id="resetBtn" class="btn-reset">重置實驗 (Reset)</button>
+        </div>
+
+        <div class="control-group">
+            <label>模擬速度</label>
+            <input type="range" id="speedRange" min="1" max="5" value="2">
+        </div>
+
+        <div class="legend">
+            <span>冷 (密度大)</span>
+            <div class="gradient-bar"></div>
+            <span>熱 (密度小)</span>
+        </div>
+
+        <div class="info-panel">
+            <strong>觀念重點：</strong><br>
+            1. 加熱點的水溫升高，體積膨脹，<span style="color:red">密度變小</span>，因此<span style="color:red">往上浮</span>。<br>
+            2. 上方的冷水因為<span style="color:blue">密度相對較大</span>，會<span style="color:blue">往下沉</span>來填補空間。<br>
+            3. 這樣一上一下的循環流動，就形成了<strong>對流</strong>。
+        </div>
+        
+        <div style="font-size: 0.8rem; color: #666;">
+            * 點擊燒杯內部可以手動攪動水流
+        </div>
+    </div>
+</div>
+
+<script>
+    const canvas = document.getElementById('simCanvas');
+    const ctx = canvas.getContext('2d');
+    const burner = document.getElementById('burner');
+    const toggleHeatBtn = document.getElementById('toggleHeatBtn');
+    const resetBtn = document.getElementById('resetBtn');
+    const hotLabel = document.getElementById('hotLabel');
+    const coldLabel = document.getElementById('coldLabel');
+    const speedRange = document.getElementById('speedRange');
+
+    // 模擬參數
+    const COLS = 30;
+    const ROWS = 40;
+    const CELL_SIZE = 10; // 每個水分子團的大小
+    const TOTAL_CELLS = COLS * ROWS;
+    
+    // 網格陣列
+    let grid = [];
+    let isHeating = false;
+    let frameCount = 0;
+
+    class WaterPacket {
+        constructor(x, y) {
+            this.x = x; // 網格座標 X
+            this.y = y; // 網格座標 Y
+            this.temp = 20; // 初始溫度 20度
+            this.color = '';
+            this.updateColor();
+        }
+
+        updateColor() {
+            // 溫度轉顏色: 0-100 對應 藍-紅
+            // 使用 HSL: 藍色約 240, 紅色約 0
+            // 限制溫度在 20-100 之間顯示
+            let displayTemp = Math.max(20, Math.min(100, this.temp));
+            const hue = 240 - ((displayTemp - 20) / 80) * 240; 
+            this.color = `hsla(${hue}, 100%, 50%, 0.8)`;
+        }
+    }
+
+    // 初始化網格
+    function init() {
+        grid = [];
+        for (let y = 0; y < ROWS; y++) {
+            let row = [];
+            for (let x = 0; x < COLS; x++) {
+                row.push(new WaterPacket(x, y));
+            }
+            grid.push(row);
+        }
+        draw();
+    }
+
+    // 取得網格資料 (邊界檢查)
+    function getCell(x, y) {
+        if (x < 0 || x >= COLS || y < 0 || y >= ROWS) return null;
+        return grid[y][x];
+    }
+
+    // 交換兩個細胞的溫度 (模擬物質移動)
+    function swapCells(c1, c2) {
+        let tempTemp = c1.temp;
+        c1.temp = c2.temp;
+        c2.temp = tempTemp;
+        
+        c1.updateColor();
+        c2.updateColor();
+    }
+
+    // 混合溫度 (熱傳導/擴散)
+    function mixTemp(c1, c2, rate) {
+        let avg = (c1.temp + c2.temp) / 2;
+        c1.temp = c1.temp * (1 - rate) + avg * rate;
+        c2.temp = c2.temp * (1 - rate) + avg * rate;
+    }
+
+    // 物理更新核心迴圈
+    function update() {
+        let speed = parseInt(speedRange.value);
+        
+        for (let s = 0; s < speed; s++) {
+            // 1. 加熱源 (在底部中間)
+            if (isHeating) {
+                // 加熱底部中間區域的 4x2 個格子
+                let centerX = Math.floor(COLS / 2);
+                let bottomY = ROWS - 1;
+                
+                for(let hx = -2; hx <= 2; hx++) {
+                    for(let hy = 0; hy < 2; hy++) {
+                        let cell = getCell(centerX + hx, bottomY - hy);
+                        if(cell) {
+                            cell.temp += 2.5; // 加熱速度
+                            if(cell.temp > 100) cell.temp = 100;
+                        }
+                    }
+                }
+            }
+
+            // 2. 模擬對流 (Convection Logic)
+            // 從底部向上掃描，模擬浮力
+            // 為了避免規律性紋路，偶爾隨機左右掃描順序
+            let xStart = Math.random() > 0.5 ? 0 : COLS - 1;
+            let xDir = xStart === 0 ? 1 : -1;
+
+            for (let y = ROWS - 1; y > 0; y--) {
+                for (let i = 0; i < COLS; i++) {
+                    let x = xStart + (i * xDir);
+                    
+                    let current = getCell(x, y);
+                    let above = getCell(x, y - 1); // 正上方
+                    
+                    // A. 垂直浮力：如果下面比上面熱，嘗試交換
+                    // 加入一些隨機性模擬亂流
+                    if (current.temp > above.temp + 2) { 
+                        // 密度差驅動力
+                        if (Math.random() < 0.8) {
+                            swapCells(current, above);
+                        }
+                    }
+                    
+                    // B. 橫向擴散/側向浮力 (如果正上方被堵住，熱水會往旁邊跑)
+                    // 檢查左上和右上
+                    let dirs = [-1, 1];
+                    // 隨機打亂檢查順序
+                    if(Math.random() > 0.5) dirs = [1, -1];
+
+                    dirs.forEach(d => {
+                        let side = getCell(x + d, y);
+                        let diag = getCell(x + d, y - 1);
+                        
+                        if (side && diag) {
+                            // 如果目前比斜上方熱很多，往斜上方鑽
+                            if (current.temp > diag.temp + 5 && Math.random() < 0.5) {
+                                swapCells(current, diag);
+                            }
+                            // 如果旁邊比較冷，且目前很熱，往旁邊擠 (液體流動性)
+                            else if (current.temp > side.temp + 10 && Math.random() < 0.3) {
+                                swapCells(current, side);
+                            }
+                        }
+                    });
+                }
+            }
+
+            // 3. 冷卻/熱平衡 (Thermal Equilibrium)
+            // 每個格子跟周圍稍微混合溫度
+            for (let y = 0; y < ROWS; y++) {
+                for (let x = 0; x < COLS; x++) {
+                    let c = getCell(x, y);
+                    let neighbors = [
+                        getCell(x+1, y), getCell(x-1, y),
+                        getCell(x, y+1), getCell(x, y-1)
+                    ];
+                    
+                    neighbors.forEach(n => {
+                        if(n) {
+                            // 傳導係數 (很小，主要靠對流，其次才是傳導)
+                            mixTemp(c, n, 0.05);
+                        }
+                    });
+
+                    // 自然冷卻 (環境散熱)
+                    if (c.temp > 20) {
+                        c.temp -= 0.05; 
+                    }
+                    c.updateColor();
+                }
+            }
+        }
+    }
+
+    function draw() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        
+        // 繪製每個水分子團
+        // 為了效能和視覺效果，這裡直接畫矩形，但稍微重疊一點消除縫隙
+        let w = canvas.width / COLS;
+        let h = canvas.height / ROWS;
+
+        for (let y = 0; y < ROWS; y++) {
+            for (let x = 0; x < COLS; x++) {
+                let cell = grid[y][x];
+                ctx.fillStyle = cell.color;
+                ctx.fillRect(x * w, y * h, w + 0.5, h + 0.5);
+            }
+        }
+        
+        // 更新標籤位置
+        updateLabels();
+
+        requestAnimationFrame(() => {
+            update();
+            draw();
+            frameCount++;
+        });
+    }
+
+    // 尋找最熱和最冷的區域來放置標籤
+    function updateLabels() {
+        if (!isHeating && frameCount % 60 !== 0) return; // 沒加熱時不用一直算
+        if (frameCount % 10 !== 0) return; // 降低更新頻率
+
+        let maxTemp = -1;
+        let minTemp = 999;
+        let hotPos = {x:0, y:0};
+        let coldPos = {x:0, y:0};
+
+        // 簡單採樣
+        for(let y=5; y<ROWS-5; y+=2) {
+            for(let x=5; x<COLS-5; x+=2) {
+                let t = grid[y][x].temp;
+                // 找正在上升的熱點 (通常在中間偏下或正在往上衝)
+                if (t > maxTemp && t > 40) {
+                    maxTemp = t;
+                    hotPos = {x, y};
+                }
+                // 找正在下降的冷點 (通常在兩側)
+                if (t < minTemp && t < 30) {
+                    minTemp = t;
+                    coldPos = {x, y};
+                }
+            }
+        }
+
+        if (maxTemp > 45 && isHeating) {
+            hotLabel.style.display = 'block';
+            hotLabel.style.left = (hotPos.x * (canvas.width/COLS) + 20) + 'px';
+            hotLabel.style.top = (hotPos.y * (canvas.height/ROWS)) + 'px';
+        } else {
+            hotLabel.style.display = 'none';
+        }
+
+        if (minTemp < 28 && isHeating) {
+            coldLabel.style.display = 'block';
+            coldLabel.style.left = (coldPos.x * (canvas.width/COLS) - 60) + 'px';
+            coldLabel.style.top = (coldPos.y * (canvas.height/ROWS)) + 'px';
+        } else {
+            coldLabel.style.display = 'none';
+        }
+    }
+
+    // 互動控制
+    toggleHeatBtn.addEventListener('click', () => {
+        isHeating = !isHeating;
+        if (isHeating) {
+            toggleHeatBtn.textContent = "停止加熱 (Stop)";
+            toggleHeatBtn.classList.add('active');
+            burner.classList.add('active');
+        } else {
+            toggleHeatBtn.textContent = "開啟加熱 (Heating)";
+            toggleHeatBtn.classList.remove('active');
+            burner.classList.remove('active');
+        }
+    });
+
+    resetBtn.addEventListener('click', () => {
+        isHeating = false;
+        toggleHeatBtn.textContent = "開啟加熱 (Heating)";
+        toggleHeatBtn.classList.remove('active');
+        burner.classList.remove('active');
+        init();
+    });
+
+    // 滑鼠互動 (攪動水)
+    let isDragging = false;
+    canvas.addEventListener('mousedown', () => isDragging = true);
+    window.addEventListener('mouseup', () => isDragging = false);
+    canvas.addEventListener('mousemove', (e) => {
+        if (!isDragging) return;
+        const rect = canvas.getBoundingClientRect();
+        const x = Math.floor((e.clientX - rect.left) / (canvas.width / COLS));
+        const y = Math.floor((e.clientY - rect.top) / (canvas.height / ROWS));
+        
+        // 滑鼠經過的地方稍微加熱並攪動
+        let cell = getCell(x, y);
+        if (cell) {
+            cell.temp += 20; 
+            // 擾動周圍
+            let neighbor = getCell(x+1, y);
+            if(neighbor) swapCells(cell, neighbor);
+        }
+    });
+
+    // 啟動
+    init();
+
+</script>
+
+</body>
+</html>
