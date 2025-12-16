@@ -1,8 +1,8 @@
 {
 	"version": "1.0.0",
-	"lastUpdated": "2025-11-29",
+	"lastUpdated": "2025-12-16",
 	"metadata": {
-		"totalAnimations": 8,
+		"totalAnimations": 9,
 		"subjects": ["physics", "math", "chemistry"],
 		"grades": ["1-1", "1-2", "2-1", "2-2", "3-1", "3-2"]
 	},
@@ -15,7 +15,9 @@
 		{"id":"sine-wave-propagation","title":"正弦波前進","subject":"physics","subjectName":"理化","grade":"2-1","gradeName":"國二上","chapter":"波動","description":"觀察橫波傳播過程，質點只做垂直振動，波形向前傳遞能量。","keywords":["橫波","正弦波","波動","質點振動","能量傳遞"],"url":"physics/sine-wave-propagation.html","status":"active","featured":false,"icon":"fa-solid fa-wave-square","addedDate":"2025-02-20","difficulty":"basic"},
 		{"id":"thermal-expansion-ring","title":"熱漲冷縮：環形膨脹","subject":"physics","subjectName":"理化","grade":"2-1","gradeName":"國二上","chapter":"溫度與熱","description":"調整溫度觀察環形物體的膨脹與粒子震動，理解熱漲冷縮原理。","keywords":["熱漲冷縮","膨脹","溫度","粒子","環形"],"url":"physics/thermal-expansion-ring.html","status":"active","featured":false,"icon":"fa-solid fa-circle-notch","addedDate":"2025-11-29","difficulty":"basic"},
 		{"id":"heating-water","title":"水加熱模擬器","subject":"physics","subjectName":"理化","grade":"2-1","gradeName":"國二上","chapter":"溫度與熱","description":"模擬穩定熱源加熱水，觀察溫度變化與熱量的關係，並驗證熱量公式 H = M × s × ΔT。","keywords":["熱量","加熱","水","溫度","比熱","熱量公式"],"url":"physics/heating-water.html","status":"active","featured":false,"icon":"fa-solid fa-mug-hot","addedDate":"2025-12-02","difficulty":"basic"},
-		{"id":"sodiam-emulation","title":"原子電子分層模擬比較","subject":"physics","subjectName":"理化","grade":"2-1","gradeName":"國二上","chapter":"原子結構","description":"比較氫、碳、氧、鈉、金等原子的電子分層結構，動態展示殼層與價電子。","keywords":["原子","電子分層","殼層","價電子","週期表"],"url":"physics/sodiam-emulation.html","status":"active","featured":false,"icon":"fa-solid fa-atom","addedDate":"2025-12-05","difficulty":"intermediate"}
+		{"id":"sodiam-emulation","title":"原子電子分層模擬比較","subject":"physics","subjectName":"理化","grade":"2-1","gradeName":"國二上","chapter":"原子結構","description":"比較氫、碳、氧、鈉、金等原子的電子分層結構，動態展示殼層與價電子。","keywords":["原子","電子分層","殼層","價電子","週期表"],"url":"physics/sodiam-emulation.html","status":"active","featured":false,"icon":"fa-solid fa-atom","addedDate":"2025-12-05","difficulty":"intermediate"},
+		{"id":"co2-3D-molecule","title":"CO₂ 二氧化碳分子模型","subject":"physics","subjectName":"理化","grade":"2-1","gradeName":"國二上","chapter":"分子結構","description":"3D互動展示二氧化碳分子的線性結構與鍵角。","keywords":["二氧化碳","分子模型","3D","鍵角"],"url":"physics/co2-3D-molecule-display.html","status":"active","featured":false,"icon":"fa-solid fa-molecule","addedDate":"2025-12-16","difficulty":"intermediate"}
+	
 	],
 	"subjects": [
 		{"id":"physics","name":"理化","icon":"fa-solid fa-bolt","color":"primary","badge":"基礎力學"},
