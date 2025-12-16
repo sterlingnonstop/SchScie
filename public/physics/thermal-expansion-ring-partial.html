@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <title>Canvas 全圖形化熱漲冷縮</title>
+    <style>
+        body {
+            background-color: #222;
+            color: #eee;
+            font-family: sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+        }
+        canvas {
+            background: #000;
+            border: 1px solid #555;
+            box-shadow: 0 0 20px rgba(0,0,0,0.5);
+            cursor: ns-resize; /* 提示可以上下拖動 */
+        }
+        .hint { margin-top: 10px; color: #aaa; font-size: 0.9em; }
+    </style>
+</head>
+<body>
+
+    <canvas id="physicsCanvas" width="600" height="500"></canvas>
+    <p class="hint">💡 操作提示：請在畫布上「按住滑鼠上下拖曳」來改變溫度</p>
+
+    <script>
+        const canvas = document.getElementById('physicsCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // --- 狀態變數 ---
+        let temperature = 0; // 0 ~ 100
+        let isDragging = false;
+        let lastY = 0;
+
+        // --- 物理參數 ---
+        const centerX = canvas.width / 2;
+        const centerY = canvas.height / 2;
+        const baseInnerR = 80;
+        const baseOuterR = 160;
+        let particles = [];
+
+        // --- 初始化粒子系統 ---
+        function initParticles() {
+            particles = [];
+            const rings = 8;
+            for (let r = 0; r < rings; r++) {
+                const progress = r / (rings - 1);
+                const currentBaseR = baseInnerR + (baseOuterR - baseInnerR) * progress;
+                // 外圈粒子多一點，視覺比較均勻
+                const count = Math.floor(20 * (currentBaseR / baseInnerR));
+                
+                for (let i = 0; i < count; i++) {
+                    particles.push({
+                        angle: (Math.PI * 2 * i) / count,
+                        baseR: currentBaseR,
+                        // 每個粒子給一點隨機相位，讓震動看起來自然不規律
+                        phase: Math.random() * Math.PI * 2 
+                    });
+                }
+            }
+        }
+
+        // --- 繪圖輔助函式：畫箭頭 ---
+        function drawArrow(ctx, fromX, fromY, toX, toY, color) {
+            const headlen = 10; 
+            const dx = toX - fromX;
+            const dy = toY - fromY;
+            const angle = Math.atan2(dy, dx);
+            
+            ctx.beginPath();
+            ctx.strokeStyle = color;
+            ctx.fillStyle = color;
+            ctx.lineWidth = 2;
+            ctx.moveTo(fromX, fromY);
+            ctx.lineTo(toX, toY);
+            ctx.stroke();
+
+            // 畫箭頭頭部
+            ctx.beginPath();
+            ctx.moveTo(toX, toY);
+            ctx.lineTo(toX - headlen * Math.cos(angle - Math.PI / 6), toY - headlen * Math.sin(angle - Math.PI / 6));
+            ctx.lineTo(toX - headlen * Math.cos(angle + Math.PI / 6), toY - headlen * Math.sin(angle + Math.PI / 6));
+            ctx.fill();
+        }
+
+        // --- 主繪圖迴圈 ---
+        function draw() {
+            // 1. 計算物理量
+            const expansionFactor = 1 + (temperature * 0.005); // 膨脹係數
+            const vibrationAmt = temperature * 0.8; // 震動幅度
+            const currentInnerR = baseInnerR * expansionFactor;
+
+            // 2. 清空畫布
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // 3. 繪製「基準線」（虛線）
+            ctx.beginPath();
+            ctx.strokeStyle = '#444';
+            ctx.setLineDash([5, 5]);
+            ctx.arc(centerX, centerY, baseInnerR, 0, Math.PI * 2);
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            // 4. 繪製粒子
+            // 顏色計算 (藍 -> 紅)
+            const r = Math.min(255, 50 + temperature * 2);
+            const g = Math.min(255, 150 - temperature * 0.5);
+            const b = Math.min(255, 255 - temperature * 2);
+            const color = `rgb(${Math.floor(r)},${Math.floor(g)},${Math.floor(b)})`;
+
+            ctx.fillStyle = color;
+            
+            // 使用時間變數讓震動動起來
+            const time = Date.now() / 50; 
+
+            particles.forEach(p => {
+                // 熱膨脹位置
+                const targetR = p.baseR * expansionFactor;
+                
+                // 熱震動位置 (利用 sin/cos 模擬週期性震動)
+                const vibrateX = Math.cos(time + p.phase) * vibrationAmt;
+                const vibrateY = Math.sin(time + p.phase) * vibrationAmt;
+
+                const x = centerX + Math.cos(p.angle) * targetR + vibrateX;
+                const y = centerY + Math.sin(p.angle) * targetR + vibrateY;
+
+                ctx.beginPath();
+                ctx.arc(x, y, 4 + temperature * 0.03, 0, Math.PI * 2);
+                ctx.fill();
+            });
+
+            // 5. 繪製教學標示 (文字與線條)
+            
+            // A. 溫度計顯示
+            ctx.font = "bold 24px Arial";
+            ctx.fillStyle = "#fff";
+            ctx.fillText(`溫度: ${temperature}°C`, 20, 40);
+            
+            // 簡易溫度條
+            ctx.fillStyle = "#333";
+            ctx.fillRect(20, 50, 200, 10);
+            ctx.fillStyle = color;
+            ctx.fillRect(20, 50, temperature * 2, 10);
+
+            // B. 內半徑標示線
+            // 畫一條橫線表示半徑
+            const lineY = centerY;
+            const startX = centerX;
+            const endX = centerX + currentInnerR;
+            
+            ctx.beginPath();
+            ctx.strokeStyle = "#fff";
+            ctx.lineWidth = 2;
+            ctx.moveTo(startX, lineY);
+            ctx.lineTo(endX, lineY);
+            ctx.stroke();
+            
+            // 標示起終點的小豎線
+            ctx.beginPath();
+            ctx.moveTo(startX, lineY - 5); ctx.lineTo(startX, lineY + 5);
+            ctx.moveTo(endX, lineY - 5); ctx.lineTo(endX, lineY + 5);
+            ctx.stroke();
+
+            // 標示文字
+            ctx.font = "16px monospace";
+            ctx.fillStyle = "#ddd";
+            ctx.textAlign = "center";
+            ctx.fillText(`r = ${currentInnerR.toFixed(1)}`, (startX + endX) / 2, lineY - 10);
+
+            // C. 膨脹方向箭頭 (當溫度較高時顯示)
+            if (temperature > 20) {
+                const arrowDist = currentInnerR - 15;
+                // 畫四個方向的箭頭，指示「向外」
+                [0, Math.PI/2, Math.PI, Math.PI*1.5].forEach(ang => {
+                    const ax = centerX + Math.cos(ang) * (baseInnerR - 20);
+                    const ay = centerY + Math.sin(ang) * (baseInnerR - 20);
+                    const bx = centerX + Math.cos(ang) * (currentInnerR + 20);
+                    const by = centerY + Math.sin(ang) * (currentInnerR + 20);
+                    
+                    // 只畫箭頭頭部在外面的樣子
+                    drawArrow(ctx, ax, ay, bx, by, "rgba(255, 255, 255, 0.5)");
+                });
+                
+                ctx.fillStyle = "rgba(255, 255, 255, 0.7)";
+                ctx.fillText("向外擴張", centerX, centerY + 10);
+            }
+
+            requestAnimationFrame(draw);
+        }
+
+        // --- 互動控制 (滑鼠拖曳) ---
+        canvas.addEventListener('mousedown', (e) => {
+            isDragging = true;
+            lastY = e.clientY;
+        });
+        
+        window.addEventListener('mouseup', () => {
+            isDragging = false;
+        });
+
+        window.addEventListener('mousemove', (e) => {
+            if (!isDragging) return;
+            
+            const deltaY = lastY - e.clientY; // 往上拖 = 正值
+            temperature += deltaY * 0.5;
+            
+            // 限制範圍
+            if (temperature < 0) temperature = 0;
+            if (temperature > 100) temperature = 100;
+            
+            lastY = e.clientY;
+        });
+
+        // 啟動
+        initParticles();
+        draw();
+
+    </script>
+</body>
+</html>
